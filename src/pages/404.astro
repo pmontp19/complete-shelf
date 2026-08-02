@@ -32,6 +32,11 @@ const t = useTranslations(DEFAULT_LOCALE);
           --faint: #8d8274;
         }
       }
+      main {
+        display: grid;
+        gap: 1.25rem;
+        justify-items: center;
+      }
       body {
         margin: 0;
         min-height: 100vh;
@@ -65,27 +70,31 @@ const t = useTranslations(DEFAULT_LOCALE);
       }
       a {
         color: inherit;
+        display: inline-block;
+        padding-block: 0.4rem;
       }
     </style>
   </head>
   <body>
-    <h1>404</h1>
-    <p>{t.site.name} — {t.site.role}</p>
-    <nav>
-      <ul>
-        {
-          LOCALES.map((code) => (
-            <li>
-              <a href={homePath(code)} lang={LOCALE_TAGS[code]}>
-                {LOCALE_NAMES[code]}
-              </a>
-            </li>
-          ))
-        }
-      </ul>
-    </nav>
-    <p>
-      <a href={sectionPath(DEFAULT_LOCALE, 'works')}>{t.works.title}</a>
-    </p>
+    <main>
+      <h1>404</h1>
+      <p>{t.site.name} — {t.site.role}</p>
+      <nav>
+        <ul>
+          {
+            LOCALES.map((code) => (
+              <li>
+                <a href={homePath(code)} lang={LOCALE_TAGS[code]}>
+                  {LOCALE_NAMES[code]}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+      <p>
+        <a href={sectionPath(DEFAULT_LOCALE, 'works')}>{t.works.title}</a>
+      </p>
+    </main>
   </body>
 </html>

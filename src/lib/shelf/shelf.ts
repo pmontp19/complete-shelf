@@ -23,13 +23,21 @@ interface Disposable {
 const NAV_DURATION_MS = 560;
 const TINT_DURATION_MS = 700;
 const PIXEL_RATIO_CAP = 2;
-const SPACING_FACTOR = 1.32;
+// Racked books stand spine-out, so a slot is one spine thick — not one cover
+// wide. Spacing off the cover width left ~5x the spine's own width of dead air
+// between volumes, which read as a nearly empty shelf.
+const SPACING_GAP = 0.012;
+// The centred book turns to face the camera and then needs its full cover
+// width. Neighbours slide outward to open that gap, the way a shelf gives when
+// you pull a volume halfway out.
+const SELECTED_CLEARANCE = 0.05;
+const SPREAD_FALLOFF = 1.6;
 const REST_ROTATION_Y = Math.PI / 2; // spine facing the camera
 const SELECTED_ROTATION_Y = 0; // front cover facing the camera
 // Neighbours fully fade out just past the edge of the framed run so the
 // shelf reads as continuing off-frame rather than stopping abruptly.
-const FADE_START_DISTANCE = 3.4;
-const FADE_END_DISTANCE = 5.2;
+const FADE_START_DISTANCE = 5.5;
+const FADE_END_DISTANCE = 7.5;
 const DRAG_PIXELS_PER_SLOT = 140;
 const DRAG_MOVE_THRESHOLD = 4;
 const WHEEL_STEP = 90;
@@ -39,8 +47,12 @@ const WHEEL_STEP = 90;
 // inside the frame with margin) holds at any container aspect ratio, from
 // a wide desktop canvas down to a narrow, squat mobile one.
 const CAMERA_VERTICAL_FOV = 34;
-const TARGET_VISIBLE_SLOTS = 9;
-const VERTICAL_MARGIN = 0.3;
+const TARGET_VISIBLE_SLOTS = 11;
+// Reference canvas shape the slot target is authored against; narrower
+// canvases show proportionally fewer books rather than shrinking them.
+const REFERENCE_ASPECT = 1.6;
+const MIN_VISIBLE_SLOTS = 6;
+const VERTICAL_MARGIN = 0.26;
 const CAMERA_MIN_DISTANCE = 1.8;
 const CAMERA_MAX_DISTANCE = 13;
 
@@ -295,10 +307,18 @@ export const mountShelf: MountShelf = async (container, options) => {
   // length instead of a fixed guess.
   const dims = books.map(computeBookDimensions);
   const maxWidth = dims.reduce((max, d) => Math.max(max, d.width), 0.42);
-  const spacing = maxWidth * SPACING_FACTOR;
+  const maxDepth = dims.reduce((max, d) => Math.max(max, d.depth), 0.06);
+  const spacing = maxDepth + SPACING_GAP;
+  // Half the extra room the turned-out book needs beyond its own slot.
+  const spread = Math.max(0, (maxWidth + SELECTED_CLEARANCE - spacing) / 2);
   const shelfTopY = 0;
-  const shelfLength = Math.max(2.2, books.length * spacing + maxWidth * 1.4);
-  const halfFrameWidth = (TARGET_VISIBLE_SLOTS * spacing) / 2;
+  // Only books within the fade radius are ever drawn, so the board needs to
+  // span that run plus a margin — not the full 22-volume collection.
+  const shelfLength = Math.max(
+    3,
+    Math.min(books.length, FADE_END_DISTANCE * 2 + 2) * spacing + spread * 2 + maxWidth * 1.6,
+  );
+  const halfFrameWidth = (TARGET_VISIBLE_SLOTS * spacing) / 2 + spread;
 
   const camera = new THREE.PerspectiveCamera(CAMERA_VERTICAL_FOV, 1, 0.1, 40);
   const cameraTarget = new THREE.Vector3(0, 0.6, 0);
@@ -597,7 +617,9 @@ export const mountShelf: MountShelf = async (container, options) => {
 
       const rotationY = lerp(REST_ROTATION_Y, SELECTED_ROTATION_Y, focus);
       const scale = 1 + focus * 0.05;
-      const x = offset * spacing;
+      // tanh saturates, so books past the immediate neighbours keep uniform
+      // spacing while the gap around the selection opens smoothly.
+      const x = offset * spacing + Math.tanh(offset * SPREAD_FALLOFF) * spread;
       const y = shelfTopY + rig.dims.height / 2 + focus * 0.04;
       const z = focus * 0.34;
 
@@ -713,8 +735,17 @@ export const mountShelf: MountShelf = async (container, options) => {
     const tanHalf = Math.tan(halfVerticalFov);
     const aspect = camera.aspect;
 
-    const distanceForSlots = halfFrameWidth / Math.max(0.05, tanHalf * aspect);
-    const selectedHalfHeight = 0.55; // ~ (book height / 2) * selected-state scale, headroom included
+    // A narrow canvas frames fewer volumes instead of rendering them tiny.
+    const slots = THREE.MathUtils.clamp(
+      TARGET_VISIBLE_SLOTS * (aspect / REFERENCE_ASPECT),
+      MIN_VISIBLE_SLOTS,
+      TARGET_VISIBLE_SLOTS,
+    );
+    const frameHalfWidth = (slots * spacing) / 2 + spread;
+    const distanceForSlots = frameHalfWidth / Math.max(0.05, tanHalf * aspect);
+    // Half the book's height, scaled for the selected state and for the fact
+    // that popping forward in Z makes it read larger than its world size.
+    const selectedHalfHeight = 0.62;
     const distanceForHeight = (selectedHalfHeight + VERTICAL_MARGIN) / tanHalf;
     const distance = THREE.MathUtils.clamp(
       Math.max(distanceForSlots, distanceForHeight),

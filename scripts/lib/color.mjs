@@ -102,5 +102,28 @@ export function tameForSpine(rgb) {
     s: clamp(hsl.s * 0.82, 0, 0.65),
     l: clamp(hsl.l * 0.78, 0.12, 0.55),
   };
-  return hslToRgb(tamed);
+  return ensureReadable(hslToRgb(tamed));
+}
+
+/**
+ * The spine colour is not only decoration: it becomes the background of the
+ * "open this book" button, with `readableTextColor` on top. A mid-grey cover
+ * (say #777778) leaves neither black nor white above 4.5:1, so nudge the
+ * colour along the lightness axis — away from mid-grey, in whichever direction
+ * its better text colour already points — until AA is satisfied. Hue and
+ * saturation are untouched, so the book still reads as its own colour.
+ */
+export function ensureReadable(rgb, target = 4.5, maxSteps = 60) {
+  let current = rgb;
+  for (let step = 0; step < maxSteps; step += 1) {
+    const text = readableTextColor(current) === LIGHT_TEXT.hex ? LIGHT_TEXT : DARK_TEXT;
+    if (contrastRatio(current, text.rgb) >= target) return current;
+    const hsl = rgbToHsl(current);
+    // Light text wants a darker ground; dark text wants a lighter one.
+    const direction = text === LIGHT_TEXT ? -1 : 1;
+    const next = clamp(hsl.l + direction * 0.015, 0.04, 0.96);
+    if (next === hsl.l) return current; // hit the rail; nothing more to give
+    current = hslToRgb({ ...hsl, l: next });
+  }
+  return current;
 }

@@ -101,7 +101,10 @@ const personSchema = {
   <body>
     <a class="skip-link" href="#main">{t.a11y.skipToContent}</a>
     <SiteHeader locale={locale} page={page} current={current} />
-    <main id="main" class={wide ? 'main main--wide' : 'main'}>
+    {/* tabindex="-1" so the skip link actually moves focus here, not just the
+        scroll position. `:focus-visible` never matches programmatic focus, so
+        this adds no stray outline. */}
+    <main id="main" tabindex="-1" class={wide ? 'main main--wide' : 'main'}>
       <slot />
     </main>
     <SiteFooter locale={locale} />

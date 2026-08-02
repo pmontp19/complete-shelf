@@ -74,7 +74,7 @@
   {
     "id": "els-deu-passos-cap-a-nanette",
     "source": "url",
-    "spineColor": "#777778",
+    "spineColor": "#6f6f70",
     "textColor": "#faf7f2",
     "width": 800,
     "height": 1209
@@ -82,7 +82,7 @@
   {
     "id": "furia",
     "source": "url",
-    "spineColor": "#ae6b6a",
+    "spineColor": "#b1706f",
     "textColor": "#1a1613",
     "width": 800,
     "height": 1211

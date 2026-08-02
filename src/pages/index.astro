@@ -27,6 +27,11 @@ const map = Object.fromEntries(LOCALES.map((code) => [code, homePath(code)]));
       window.location.replace(preferred ? map[preferred] : defaultHref);
     </script>
     <style>
+      /* Normally invisible — JS or the meta refresh moves on immediately. It
+         still gets a dark variant so a JS-blocked visitor is not flashed. */
+      :root {
+        color-scheme: light dark;
+      }
       body {
         font-family: Georgia, 'Times New Roman', serif;
         background: #f7f3ec;
@@ -37,6 +42,12 @@ const map = Object.fromEntries(LOCALES.map((code) => [code, homePath(code)]));
         margin: 0;
         text-align: center;
         gap: 1rem;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #16130f;
+          color: #f2ece2;
+        }
       }
       ul {
         display: flex;

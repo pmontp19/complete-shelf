@@ -76,6 +76,15 @@ export function paletteFor(id: string): { spineColor: string; textColor: string 
 }
 
 /**
+ * Real pixel dimensions of the stored cover. Covers are not all 2:3 — assuming
+ * they were shifted the whole book page down once the image decoded.
+ */
+export function dimensionsFor(id: string): { width: number; height: number } {
+  const meta = coverMeta.get(id) ?? FALLBACK_COVER_META;
+  return { width: meta.width, height: meta.height };
+}
+
+/**
  * Picks the best available synopsis for a locale. Returning the original-market
  * text is far better than returning an empty paragraph.
  */

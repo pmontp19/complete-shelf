@@ -45,7 +45,7 @@ export const PROFILE: Profile = {
   bio: {
     ca: [
       'Sóc traductora literària i professora universitària. Tradueixo de l’alemany, el francès i l’anglès al català i al castellà, i des del 2019 he portat més de vint llibres a la llengua catalana per a Columna i Edicions 62: novel·la contemporània, memòries, narrativa de gènere i, també, algun receptari.',
-      'Em vaig graduar en Traducció i Interpretació a la Universitat Pompeu Fabra el 2013 i hi vaig cursar el Màster en Estudis de Traducció l’any següent, amb un treball sobre la recepció de La visita de la vella dama, de Friedrich Dürrenmatt, a Barcelona. El 2022 vaig defensar la tesi doctoral a la Universitat Rovira i Virgili, dirigida per Anthony Pym i Carmen Bestué, sobre la confiança dels jutges en els intèrprets als procediments penals.',
+      'Em vaig graduar en Traducció i Interpretació a la Universitat Pompeu Fabra el 2013 i hi vaig cursar el Màster en Estudis de Traducció l’any següent, amb un treball sobre la recepció de La visita de la vella dama, de Friedrich Dürrenmatt, a Barcelona. El 2022 vaig defensar la tesi doctoral a la Universitat Rovira i Virgili, dirigida per Anthony Pym i Carmen Bestué, sobre la confiança dels jutges en els intèrprets en els procediments penals.',
       'Actualment sóc professora associada al Departament d’Estudis Anglesos i Alemanys de la URV i imparteixo traducció jurídica a la Universitat Pompeu Fabra i al Màster en Traducció Jurídica i Interpretació Judicial de la UAB. Compagino la docència i la recerca —traducció jurídica, interpretació als serveis públics, sociologia de la traducció— amb la traducció professional.',
     ],
     es: [
@@ -59,9 +59,9 @@ export const PROFILE: Profile = {
       'I currently teach as an associate lecturer in the Department of English and German Studies at URV, and I teach legal translation at Universitat Pompeu Fabra and on the UAB Master’s in Legal Translation and Court Interpreting. Teaching and research — legal translation, public service interpreting, the sociology of translation — run alongside my professional translation work.',
     ],
     de: [
-      'Ich bin Literaturübersetzerin und Universitätsdozentin. Ich übersetze aus dem Deutschen, Französischen und Englischen ins Katalanische und Spanische und habe seit 2019 mehr als zwanzig Bücher für Columna und Edicions 62 ins Katalanische gebracht: Gegenwartsliteratur, Memoiren, Genreliteratur und gelegentlich ein Kochbuch.',
+      'Ich bin Literaturübersetzerin und Universitätsdozentin. Ich übersetze aus dem Deutschen, Französischen und Englischen ins Katalanische und Spanische und habe seit 2019 mehr als zwanzig Bücher für Columna und Edicions 62 ins Katalanische übertragen: Gegenwartsliteratur, Memoiren, Genreliteratur und gelegentlich ein Kochbuch.',
       'Ich habe 2013 mein Studium der Übersetzung und des Dolmetschens an der Universitat Pompeu Fabra abgeschlossen und dort im Jahr darauf den Master in Übersetzungswissenschaft absolviert, mit einer Arbeit über die Rezeption von Friedrich Dürrenmatts Der Besuch der alten Dame in Barcelona. 2022 habe ich an der Universitat Rovira i Virgili meine Doktorarbeit verteidigt, betreut von Anthony Pym und Carmen Bestué, über das Vertrauen von Richterinnen und Richtern in Dolmetscher in Strafverfahren.',
-      'Derzeit bin ich Lehrbeauftragte am Departament d’Estudis Anglesos i Alemanys der URV und unterrichte juristisches Übersetzen an der Universitat Pompeu Fabra sowie im Masterstudiengang für juristisches Übersetzen und Gerichtsdolmetschen der UAB. Lehre und Forschung — juristisches Übersetzen, Community Interpreting, Translationssoziologie — begleiten meine Arbeit als Übersetzerin.',
+      'Derzeit bin ich Lehrbeauftragte am Fachbereich für Anglistik und Germanistik der URV und unterrichte juristisches Übersetzen an der Universitat Pompeu Fabra sowie im Masterstudiengang für juristisches Übersetzen und Gerichtsdolmetschen der UAB. Lehre und Forschung — juristisches Übersetzen, Community Interpreting, Translationssoziologie — begleiten meine Arbeit als Übersetzerin.',
     ],
     fr: [
       'Je suis traductrice littéraire et enseignante à l’université. Je traduis de l’allemand, du français et de l’anglais vers le catalan et l’espagnol, et depuis 2019 j’ai porté plus de vingt livres en catalan pour Columna et Edicions 62 : romans contemporains, récits autobiographiques, littérature de genre et, à l’occasion, un livre de cuisine.',
@@ -83,7 +83,7 @@ export const PROFILE: Profile = {
         ca: 'Departament d’Estudis Anglesos i Alemanys. Traducció jurídica i econòmica.',
         es: 'Departamento de Estudios Ingleses y Alemanes. Traducción jurídica y económica.',
         en: 'Department of English and German Studies. Legal and economic translation.',
-        de: 'Departament d’Estudis Anglesos i Alemanys. Juristisches und Wirtschaftsübersetzen.',
+        de: 'Fachbereich für Anglistik und Germanistik. Juristisches und Wirtschaftsübersetzen.',
         fr: 'Département d’études anglaises et allemandes. Traduction juridique et économique.',
       },
       href: 'https://www.deaa.urv.cat/ca/departament/staff/raigal/',

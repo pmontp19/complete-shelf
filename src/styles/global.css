@@ -11,7 +11,7 @@
   --paper-sunk: #efe8dd;
   --ink: #1e1a16;
   --ink-soft: #4f463c;
-  --ink-faint: #8a7f72;
+  --ink-faint: #706557; /* 5.15:1 on --paper, 4.68:1 on --paper-sunk */
   --rule: #ddd2c2;
   --accent: #7a3b2e;
   --accent-soft: #a8614f;

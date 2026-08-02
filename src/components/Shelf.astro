@@ -55,7 +55,7 @@ const payload = {
           class="detail"
           data-shelf-detail={book.id}
           hidden={index !== 0}
-          style={`--tint:${book.palette.spineColor};`}
+          style={`--tint:${book.palette.spineColor};--tint-contrast:${book.palette.textColor};`}
         >
           <h2 class="detail__title">{book.title}</h2>
           <p class="detail__author">{book.author}</p>
@@ -244,7 +244,7 @@ const payload = {
 
   .detail__meta dt {
     font-family: var(--font-sans);
-    font-size: 0.66rem;
+    font-size: 0.72rem;
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--ink-faint);
@@ -256,9 +256,11 @@ const payload = {
     font-size: 0.95rem;
   }
 
+  /* The cover pipeline already picked a WCAG-checked foreground for each
+     spine colour; use it instead of assuming every cover is dark. */
   .detail .button {
     --button-bg: var(--tint);
-    --button-fg: #fffdf9;
+    --button-fg: var(--tint-contrast);
   }
 
   .fallback-grid {

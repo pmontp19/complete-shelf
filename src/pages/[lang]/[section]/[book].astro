@@ -7,6 +7,7 @@ import {
   ALL_BOOKS,
   coverFor,
   paletteFor,
+  dimensionsFor,
   neighbours,
   synopsisFor,
   type BookRecord,
@@ -26,6 +27,7 @@ const { book } = Astro.props as { book: BookRecord };
 const t = useTranslations(locale);
 
 const palette = paletteFor(book.id);
+const cover = dimensionsFor(book.id);
 const { previous, next } = neighbours(book.id);
 const synopsis = synopsisFor(book, locale);
 
@@ -85,8 +87,8 @@ const schema = {
     <div class="book__cover">
       <img
         src={coverFor(book.id)}
-        width="800"
-        height="1200"
+        width={cover.width}
+        height={cover.height}
         alt={`${t.book.originalTitle}: ${book.originalTitle}. ${book.title}, ${book.author}`}
         fetchpriority="high"
       />
@@ -96,8 +98,12 @@ const schema = {
       <p class="eyebrow">{book.publisher} · {book.year}</p>
       <h1>{book.title}</h1>
       <p class="book__author">{book.author}</p>
+      {/* Label-free on purpose: the `from`/`into` labels are nouns now, so an
+          arrow reads better here than "Source language Deutsch". */}
       <p class="book__original">
-        <i>{book.originalTitle}</i> · {t.book.from} {t.languages[book.originalLanguage]}
+        <i>{book.originalTitle}</i> · {t.languages[book.originalLanguage]} → {
+          t.languages[book.targetLanguage]
+        }
       </p>
 
       {
@@ -170,6 +176,8 @@ const schema = {
   }
 
   .crumb a {
+    display: inline-block;
+    padding-block: 0.35rem;
     text-decoration: none;
     color: var(--ink-faint);
   }
@@ -193,6 +201,9 @@ const schema = {
 
   .book__cover img {
     width: 100%;
+    /* The intrinsic ratio comes from the width/height attributes above, which
+       are the file's real dimensions — covers are not all 2:3. */
+    height: auto;
     border-radius: 2px;
     box-shadow: 0 4px 10px rgb(30 26 22 / 0.12), 0 26px 60px
       color-mix(in srgb, var(--tint) 30%, transparent);
@@ -221,7 +232,7 @@ const schema = {
 
   .book__details-heading {
     font-family: var(--font-sans);
-    font-size: 0.66rem;
+    font-size: 0.72rem;
     font-weight: 600;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -240,7 +251,7 @@ const schema = {
 
   .book__details dt {
     font-family: var(--font-sans);
-    font-size: 0.66rem;
+    font-size: 0.72rem;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--ink-faint);
