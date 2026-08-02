@@ -112,7 +112,7 @@ const ca: Dictionary = {
   home: {
     heroLead:
       'Cada volum d’aquesta prestatgeria és un llibre que he portat a una altra llengua. Tria’n un per veure’n la fitxa completa.',
-    shelfHint: 'Desplaça’t o fes servir les fletxes per recórrer la prestatgeria.',
+    shelfHint: 'Arrossega la prestatgeria o fes servir les fletxes. Clica un volum per obrir-lo.',
     ctaWorks: 'Veure totes les traduccions',
     ctaAbout: 'Sobre mi',
     selectedHeading: 'Volum seleccionat',
@@ -224,7 +224,7 @@ const es: Dictionary = {
   home: {
     heroLead:
       'Cada volumen de esta estantería es un libro que he llevado a otra lengua. Elige uno para ver su ficha completa.',
-    shelfHint: 'Desplázate o usa las flechas para recorrer la estantería.',
+    shelfHint: 'Arrastra la estantería o usa las flechas. Haz clic en un volumen para abrirlo.',
     ctaWorks: 'Ver todas las traducciones',
     ctaAbout: 'Sobre mí',
     selectedHeading: 'Volumen seleccionado',
@@ -336,7 +336,7 @@ const en: Dictionary = {
   home: {
     heroLead:
       'Every volume on this shelf is a book I carried into another language. Pick one to read its full record.',
-    shelfHint: 'Scroll or use the arrow keys to browse the shelf.',
+    shelfHint: 'Drag the shelf or use the arrow keys. Click a volume to open it.',
     ctaWorks: 'See all translations',
     ctaAbout: 'About me',
     selectedHeading: 'Selected volume',
@@ -448,7 +448,7 @@ const de: Dictionary = {
   home: {
     heroLead:
       'Jeder Band in diesem Regal ist ein Buch, das ich in eine andere Sprache übertragen habe. Wählen Sie einen aus, um den vollständigen Eintrag zu sehen.',
-    shelfHint: 'Scrollen Sie oder nutzen Sie die Pfeiltasten, um das Regal zu durchstöbern.',
+    shelfHint: 'Ziehen Sie am Regal oder nutzen Sie die Pfeiltasten. Klicken Sie einen Band an, um ihn zu öffnen.',
     ctaWorks: 'Alle Übersetzungen ansehen',
     ctaAbout: 'Über mich',
     selectedHeading: 'Ausgewählter Band',
@@ -561,7 +561,7 @@ const fr: Dictionary = {
   home: {
     heroLead:
       'Chaque volume de cette étagère est un livre que j’ai fait passer d’une langue à l’autre. Choisissez-en un pour consulter sa fiche complète.',
-    shelfHint: 'Faites défiler ou utilisez les flèches pour parcourir l’étagère.',
+    shelfHint: 'Faites glisser l’étagère ou utilisez les flèches. Cliquez sur un volume pour l’ouvrir.',
     ctaWorks: 'Voir toutes les traductions',
     ctaAbout: 'À propos',
     selectedHeading: 'Volume sélectionné',

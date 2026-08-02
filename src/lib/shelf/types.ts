@@ -3,7 +3,9 @@
  *
  * The shelf module must depend on nothing else in the project: it receives
  * plain data and returns a handle. This keeps the 3D layer swappable and
- * testable in isolation.
+ * testable in isolation. All visible chrome — buttons, counter, caption —
+ * belongs to the page; the module owns only the canvas and the focusable
+ * region that wraps it.
  */
 
 export interface ShelfBook {
@@ -61,6 +63,13 @@ export interface ShelfOptions {
   reducedMotion?: boolean;
   /** Fired whenever the centred volume changes. */
   onSelect?: (book: ShelfBook, index: number) => void;
+  /**
+   * Fired on every frame the shelf moves, with the continuous carriage
+   * position in slot units. Drives the counter and the scrub rail.
+   */
+  onProgress?: (position: number, total: number) => void;
+  /** Fired once every cover texture has settled (loaded or failed). */
+  onReady?: () => void;
   /** Fired when the user activates the centred volume (click / Enter). */
   onActivate?: (book: ShelfBook, index: number) => void;
 }

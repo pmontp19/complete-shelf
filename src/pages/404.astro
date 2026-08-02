@@ -2,6 +2,9 @@
 /**
  * A single 404 for the whole site. It cannot know the reader's language from a
  * static file, so it offers every locale rather than guessing wrong.
+ *
+ * Self-contained on purpose: no import of `global.css`, so this page still
+ * looks like the site even when the reason for the 404 is a broken deploy.
  */
 import { LOCALES, LOCALE_NAMES, LOCALE_TAGS, DEFAULT_LOCALE } from '~/i18n/config';
 import { homePath, sectionPath, assetPath } from '~/i18n/paths';
@@ -25,62 +28,111 @@ const t = useTranslations(DEFAULT_LOCALE);
         --ink: #1e1a16;
         /* Keep in step with --ink-faint in global.css: 5.15:1 on --paper. */
         --faint: #706557;
+        --rule: #ddd2c2;
+        --accent: #7a3b2e;
       }
       @media (prefers-color-scheme: dark) {
         :root {
           --paper: #16130f;
           --ink: #f2ece2;
           --faint: #8d8274;
+          --rule: #332c24;
+          --accent: #d8927f;
         }
       }
-      main {
-        display: grid;
-        gap: 1.25rem;
-        justify-items: center;
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
       }
       body {
         margin: 0;
         min-height: 100vh;
         display: grid;
         place-content: center;
-        gap: 1.25rem;
-        padding: 2rem;
-        text-align: center;
+        padding: clamp(1.5rem, 6vw, 4rem);
         background: var(--paper);
         color: var(--ink);
-        font-family: 'Iowan Old Style', Palatino, Georgia, serif;
+        font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      main {
+        width: min(100%, 34rem);
+      }
+      .eyebrow {
+        margin: 0 0 clamp(1rem, 4vw, 2rem);
+        padding-bottom: clamp(1rem, 4vw, 2rem);
+        border-bottom: 1px solid var(--rule);
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--faint);
       }
       h1 {
-        font-size: clamp(2rem, 1.4rem + 2.6vw, 3.2rem);
-        margin: 0;
+        margin: 0 0 0.15em;
+        font-size: clamp(3.5rem, 2rem + 7vw, 7rem);
+        line-height: 0.95;
+        letter-spacing: -0.035em;
+        font-weight: 600;
       }
-      p {
+      .role {
+        margin: 0 0 clamp(2rem, 6vw, 3rem);
         color: var(--faint);
-        margin: 0;
+        font-size: 1.05rem;
+      }
+      .label {
+        margin: 0 0 0.9rem;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--faint);
       }
       ul {
         display: flex;
         flex-wrap: wrap;
-        justify-content: center;
-        gap: 0.35rem 1.1rem;
+        gap: 0.35rem 1.35rem;
         list-style: none;
         padding: 0;
-        margin: 0;
+        margin: 0 0 clamp(1.75rem, 5vw, 2.5rem);
         font-family: ui-sans-serif, system-ui, sans-serif;
-        font-size: 0.9rem;
+        font-size: 0.92rem;
       }
       a {
         color: inherit;
         display: inline-block;
-        padding-block: 0.4rem;
+        padding-block: 0.35rem;
+        text-underline-offset: 0.2em;
+        text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+        transition: color 160ms cubic-bezier(0.22, 0.61, 0.36, 1);
+      }
+      a:hover {
+        color: var(--accent);
+        text-decoration-color: currentColor;
+      }
+      .catalogue {
+        margin: 0;
+        padding-top: clamp(1.25rem, 4vw, 1.75rem);
+        border-top: 1px solid var(--rule);
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.92rem;
+      }
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
       }
     </style>
   </head>
   <body>
     <main>
+      <p class="eyebrow">{t.site.name}</p>
       <h1>404</h1>
-      <p>{t.site.name} — {t.site.role}</p>
+      <p class="role">{t.site.role}</p>
+
       <nav>
+        <p class="label">{t.a11y.languageSwitcher}</p>
         <ul>
           {
             LOCALES.map((code) => (
@@ -93,8 +145,9 @@ const t = useTranslations(DEFAULT_LOCALE);
           }
         </ul>
       </nav>
-      <p>
-        <a href={sectionPath(DEFAULT_LOCALE, 'works')}>{t.works.title}</a>
+
+      <p class="catalogue">
+        <a href={sectionPath(DEFAULT_LOCALE, 'works')}>{t.works.title} →</a>
       </p>
     </main>
   </body>

@@ -113,22 +113,39 @@ const links = SECTIONS.map((section) => ({
   }
 
   /* Below the fold on phones the nav wraps under the brand rather than
-     collapsing into a hamburger: three links do not justify a menu. */
+     collapsing into a hamburger: three links do not justify a menu. Kept as
+     tight as it can be — the header is sticky, and every pixel it takes is a
+     pixel off the top of the shelf. */
   @media (max-width: 40rem) {
     .header__inner {
       flex-wrap: wrap;
-      row-gap: 0.5rem;
+      row-gap: 0.35rem;
+      padding-block: 0.5rem;
     }
 
     .brand {
       margin-inline-end: auto;
+      line-height: 1.15;
+    }
+
+    .brand__name {
+      font-size: 0.95rem;
+    }
+
+    .brand__role {
+      font-size: 0.62rem;
     }
 
     .nav {
       order: 3;
       width: 100%;
       border-top: 1px solid var(--rule);
-      padding-top: 0.5rem;
+      padding-top: 0.3rem;
+    }
+
+    .nav a {
+      padding-block: 0.25rem;
+      font-size: 0.8rem;
     }
 
     .nav ul {

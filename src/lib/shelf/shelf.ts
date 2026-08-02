@@ -11,17 +11,25 @@ import {
   createPageEdgeTexture,
   createSpineTexture,
   createWoodGrainTexture,
+  hashSeed,
   loadTextureSafe,
+  seededRandom,
 } from './textures';
-import { Tween, clamp01, easeInOutCubic, lerp } from './easing';
+import { Tween, clamp01, easeInOutCubic, easeOutQuint, lerp } from './easing';
 
 /** Anything with a `.dispose()` — collected as resources are created so `destroy()` can free them all. */
 interface Disposable {
   dispose(): void;
 }
 
-const NAV_DURATION_MS = 560;
-const TINT_DURATION_MS = 700;
+// A step taken with a key or a button: short enough to feel immediate, long
+// enough to read as a volume being drawn out and turned.
+const STEP_DURATION_MS = 520;
+// A throw settles over a distance-scaled window, so a two-slot nudge lands
+// crisply while a long flick decelerates like a real carriage.
+const SETTLE_MIN_MS = 360;
+const SETTLE_MAX_MS = 980;
+const TINT_DURATION_MS = 760;
 const PIXEL_RATIO_CAP = 2;
 // Racked books stand spine-out, so a slot is one spine thick — not one cover
 // wide. Spacing off the cover width left ~5x the spine's own width of dead air
@@ -31,16 +39,26 @@ const SPACING_GAP = 0.012;
 // width. Neighbours slide outward to open that gap, the way a shelf gives when
 // you pull a volume halfway out.
 const SELECTED_CLEARANCE = 0.05;
+// How far the centred volume travels towards the reader. Bounded by the depth
+// of the ledge below: any further and it stands on air.
+const SELECTED_LIFT_Z = 0.24;
+const LEDGE_DEPTH = 0.68;
 const SPREAD_FALLOFF = 1.6;
 const REST_ROTATION_Y = Math.PI / 2; // spine facing the camera
 const SELECTED_ROTATION_Y = 0; // front cover facing the camera
-// Neighbours fully fade out just past the edge of the framed run so the
-// shelf reads as continuing off-frame rather than stopping abruptly.
-const FADE_START_DISTANCE = 5.5;
-const FADE_END_DISTANCE = 7.5;
-const DRAG_PIXELS_PER_SLOT = 140;
+// Books lean the way books lean. Deterministic per volume, straightened as a
+// book comes to the centre.
+const MAX_LEAN = 0.035;
+const DRAG_PIXELS_PER_SLOT = 132;
 const DRAG_MOVE_THRESHOLD = 4;
-const WHEEL_STEP = 90;
+// A trackpad flick reports far more pixels than a mouse notch; scrubbing off a
+// pixel budget rather than counting notches makes both feel like the same shelf.
+const WHEEL_PIXELS_PER_SLOT = 118;
+// How long the carriage keeps travelling after the fingers leave it.
+const FLICK_PROJECTION_S = 0.28;
+const FLICK_MAX_SLOTS = 7;
+// Idle time after the last wheel event before the shelf settles onto a volume.
+const WHEEL_SETTLE_DELAY_MS = 150;
 
 // Camera framing — recomputed on every resize so the composition (roughly
 // this many book-slots visible across the frame, selected book fully
@@ -52,9 +70,15 @@ const TARGET_VISIBLE_SLOTS = 11;
 // canvases show proportionally fewer books rather than shrinking them.
 const REFERENCE_ASPECT = 1.6;
 const MIN_VISIBLE_SLOTS = 6;
+// Air above the selected volume and below the ledge, in world units. Enough
+// that the turned-out cover is never clipped by the top of the stage, not so
+// much that the shelf floats in a dead band.
 const VERTICAL_MARGIN = 0.26;
 const CAMERA_MIN_DISTANCE = 1.8;
 const CAMERA_MAX_DISTANCE = 13;
+// Below this many volumes the run is too short to hide the seam, so the shelf
+// keeps hard ends instead of looping.
+const MIN_BOOKS_TO_WRAP = 8;
 
 function smootherstep(x: number): number {
   const t = clamp01(x);
@@ -96,8 +120,23 @@ function formatSelected(
     .replace('{total}', String(total));
 }
 
+/**
+ * Reads a colour off a CSS custom property. The scene has no background of its
+ * own — it is drawn onto the page — so the atmosphere has to be mixed from the
+ * same paper the CSS is painting, in whichever theme is live.
+ */
+function readCssColor(el: HTMLElement, name: string, fallback: string): THREE.Color {
+  const raw = getComputedStyle(el).getPropertyValue(name).trim();
+  if (!raw) return new THREE.Color(fallback);
+  try {
+    return new THREE.Color(raw);
+  } catch {
+    return new THREE.Color(fallback);
+  }
+}
+
 interface ThemePalette {
-  background: THREE.Color;
+  /** Atmospheric haze the far end of the run dissolves into — always the page's own paper. */
   fog: THREE.Color;
   hemiSky: THREE.Color;
   hemiGround: THREE.Color;
@@ -105,17 +144,23 @@ interface ThemePalette {
   rim: THREE.Color;
 }
 
-function themePalette(spineColorHex: string): ThemePalette {
-  const base = new THREE.Color(spineColorHex);
+/**
+ * Mixes the lighting rig from the page's paper colour and the selected cover.
+ * Anchoring on paper (rather than on an absolute white) is what lets the canvas
+ * sit on the page with no visible seam, in light and dark alike.
+ */
+function themePalette(paper: THREE.Color, spineColorHex: string, dark: boolean): ThemePalette {
+  const spine = new THREE.Color(spineColorHex);
   const hsl = { h: 0, s: 0, l: 0 };
-  base.getHSL(hsl);
+  spine.getHSL(hsl);
+
+  const sky = dark ? new THREE.Color(0x6d6153) : new THREE.Color(0xfff8ec);
   return {
-    background: new THREE.Color().setHSL(hsl.h, Math.min(0.14, hsl.s * 0.3 + 0.04), 0.93),
-    fog: new THREE.Color().setHSL(hsl.h, Math.min(0.16, hsl.s * 0.32 + 0.05), 0.86),
-    hemiSky: new THREE.Color().setHSL(hsl.h, Math.min(0.22, hsl.s * 0.4 + 0.06), 0.88),
-    hemiGround: new THREE.Color().setHSL(hsl.h, Math.min(0.3, hsl.s * 0.5 + 0.08), 0.26),
-    key: new THREE.Color().setHSL(hsl.h, Math.min(0.28, hsl.s * 0.4 + 0.06), 0.9),
-    rim: new THREE.Color().setHSL(hsl.h, Math.min(0.55, hsl.s * 0.7 + 0.15), 0.62),
+    fog: paper.clone().lerp(spine, dark ? 0.16 : 0.09),
+    hemiSky: sky.lerp(spine, 0.12),
+    hemiGround: paper.clone().multiplyScalar(dark ? 0.42 : 0.3).lerp(spine, 0.28),
+    key: new THREE.Color(dark ? 0xf3e4cd : 0xfff4e2).lerp(spine, 0.1),
+    rim: new THREE.Color().setHSL(hsl.h, Math.min(0.6, hsl.s * 0.75 + 0.15), dark ? 0.48 : 0.62),
   };
 }
 
@@ -166,7 +211,12 @@ interface BookRig {
   motion: THREE.Group;
   mesh: THREE.Mesh;
   shadowMesh: THREE.Mesh;
+  shadowMaterial: THREE.MeshBasicMaterial;
   materials: THREE.MeshStandardMaterial[];
+  /** Deterministic idle lean, in radians. */
+  lean: number;
+  /** Smoothed 0..1 hover weight. */
+  hover: number;
 }
 
 export const mountShelf: MountShelf = async (container, options) => {
@@ -176,23 +226,35 @@ export const mountShelf: MountShelf = async (container, options) => {
     return mountFallback(container, labels, books);
   }
 
+  const total = books.length;
+  // A run this long can loop without the two ends ever being on screen at
+  // once, so the shelf reads as continuing past the frame in both directions
+  // instead of running out of books at the first and last volume.
+  const wraps = total >= MIN_BOOKS_TO_WRAP;
+
   // ---------------------------------------------------------------------
-  // DOM scaffold
+  // DOM scaffold — the canvas and nothing else. Buttons, counter and caption
+  // are the page's job, wired through the returned handle.
   // ---------------------------------------------------------------------
   container.innerHTML = '';
-  container.style.position = container.style.position || 'relative';
+  // The region inside is absolutely positioned, so the host must be a
+  // containing block — but check the *computed* value, not the inline one:
+  // writing `relative` over a stage that the page laid out as `absolute`
+  // collapses it to zero height.
+  if (getComputedStyle(container).position === 'static') {
+    container.style.position = 'relative';
+  }
 
   const region = document.createElement('div');
+  region.className = 'shelf3d-region';
   region.setAttribute('role', 'region');
   region.setAttribute('aria-label', labels.region);
   region.tabIndex = 0;
   region.style.position = 'relative';
   region.style.width = '100%';
   region.style.height = '100%';
-  region.style.overflow = 'hidden';
-  // The ancestor `.shelf__canvas` wrapper clips with overflow:hidden too, so an
-  // outward-drawn outline would be clipped at exactly the frame it should ring.
-  // Drawing it inset keeps the focus ring visible.
+  // The ancestor stage clips with overflow:hidden, so an outward-drawn outline
+  // would be clipped at exactly the frame it should ring. Draw it inset.
   region.style.outlineOffset = '-3px';
 
   const canvasHost = document.createElement('div');
@@ -200,68 +262,24 @@ export const mountShelf: MountShelf = async (container, options) => {
   canvasHost.style.inset = '0';
   region.appendChild(canvasHost);
 
-  const loadingNote = document.createElement('div');
-  loadingNote.textContent = labels.loading;
-  loadingNote.style.position = 'absolute';
-  loadingNote.style.left = '0.75rem';
-  loadingNote.style.top = '0.75rem';
-  loadingNote.style.font = '0.75rem system-ui, sans-serif';
-  loadingNote.style.opacity = '0.65';
-  loadingNote.style.pointerEvents = 'none';
-  loadingNote.style.transition = 'opacity 0.4s ease';
-  region.appendChild(loadingNote);
-  let loadingNoteHidden = false;
-  function hideLoadingNote(): void {
-    if (loadingNoteHidden) return;
-    loadingNoteHidden = true;
-    loadingNote.style.opacity = '0';
-  }
-
   const liveRegion = document.createElement('div');
   liveRegion.setAttribute('aria-live', 'polite');
   visuallyHide(liveRegion);
   region.appendChild(liveRegion);
 
-  const controls = document.createElement('div');
-  controls.style.position = 'absolute';
-  controls.style.bottom = '1rem';
-  controls.style.left = '50%';
-  controls.style.transform = 'translateX(-50%)';
-  controls.style.display = 'flex';
-  controls.style.gap = '0.6rem';
-  controls.style.zIndex = '2';
-
-  function makeButton(label: string, glyph: string): HTMLButtonElement {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.setAttribute('aria-label', label);
-    button.textContent = glyph;
-    button.style.font = '1rem system-ui, sans-serif';
-    button.style.width = '2.25rem';
-    button.style.height = '2.25rem';
-    button.style.borderRadius = '999px';
-    button.style.border = '1px solid rgba(0,0,0,0.18)';
-    button.style.background = 'rgba(255,255,255,0.82)';
-    button.style.color = '#2a2118';
-    button.style.cursor = 'pointer';
-    button.style.lineHeight = '1';
-    return button;
-  }
-
-  const previousButton = makeButton(labels.previous, '‹');
-  const openButton = makeButton(labels.open, '●');
-  const nextButton = makeButton(labels.next, '›');
-  controls.append(previousButton, openButton, nextButton);
-  region.appendChild(controls);
-
   container.appendChild(region);
 
   // ---------------------------------------------------------------------
-  // Renderer
+  // Renderer — transparent, so the page's paper (and its tint wash) shows
+  // through and the 3D stage has no edge of its own.
   // ---------------------------------------------------------------------
   let renderer: THREE.WebGLRenderer;
   try {
-    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: true,
+      powerPreference: 'high-performance',
+    });
   } catch {
     container.innerHTML = '';
     return mountFallback(container, labels, books);
@@ -269,7 +287,8 @@ export const mountShelf: MountShelf = async (container, options) => {
 
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  renderer.toneMappingExposure = 1.14;
+  renderer.setClearColor(0x000000, 0);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, PIXEL_RATIO_CAP));
@@ -277,7 +296,7 @@ export const mountShelf: MountShelf = async (container, options) => {
   renderer.domElement.style.width = '100%';
   renderer.domElement.style.height = '100%';
   renderer.domElement.style.cursor = 'grab';
-  renderer.domElement.style.touchAction = 'none';
+  renderer.domElement.style.touchAction = 'pan-y';
   canvasHost.appendChild(renderer.domElement);
   const canvas = renderer.domElement;
 
@@ -288,32 +307,63 @@ export const mountShelf: MountShelf = async (container, options) => {
   const disposables: Disposable[] = [];
 
   const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const darkSchemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
   const reducedMotionForced = options.reducedMotion !== undefined;
   let reducedMotion = options.reducedMotion ?? reducedMotionQuery.matches;
+  let darkScheme = darkSchemeQuery.matches;
+  let paperColor = readCssColor(document.documentElement, '--paper', '#f7f3ec');
+
+  /** Wraps a slot index into `[0, total)`. */
+  const wrapIndex = (index: number): number =>
+    total === 0 ? -1 : ((Math.round(index) % total) + total) % total;
 
   const clampIndex = (index: number): number =>
-    books.length === 0 ? -1 : THREE.MathUtils.clamp(Math.round(index), 0, books.length - 1);
+    total === 0 ? -1 : THREE.MathUtils.clamp(Math.round(index), 0, total - 1);
 
-  let currentIndex = clampIndex(options.initialIndex ?? 0);
-  const navTween = new Tween(Math.max(0, currentIndex), NAV_DURATION_MS, easeInOutCubic);
+  const normaliseIndex = (index: number): number => (wraps ? wrapIndex(index) : clampIndex(index));
+
+  /**
+   * The shortest signed distance, in slots, from a continuous carriage
+   * position to a book — the whole of the looping illusion lives here. Each
+   * volume is drawn exactly once, at whichever side of the carriage it is
+   * nearer to, so the run has no ends to fall off.
+   */
+  function slotOffset(index: number, position: number): number {
+    const raw = index - position;
+    if (!wraps) return raw;
+    let d = ((raw % total) + total) % total;
+    if (d > total / 2) d -= total;
+    return d;
+  }
+
+  let currentIndex = normaliseIndex(options.initialIndex ?? 0);
+  // Unbounded when wrapping: the carriage keeps counting up past the last
+  // volume rather than bouncing off it.
+  let targetPosition = Math.max(0, currentIndex);
+  const navTween = new Tween(targetPosition, STEP_DURATION_MS, easeInOutCubic);
+  /** Set while the reader is scrubbing by hand; overrides the tween. */
   let livePosition: number | null = null;
 
   const tintTween = new Tween(0, TINT_DURATION_MS, easeInOutCubic);
   tintTween.snapTo(1);
-  let tintFrom: ThemePalette = themePalette(books[currentIndex]?.spineColor ?? '#6b5a45');
+  let tintFrom: ThemePalette = themePalette(
+    paperColor,
+    books[currentIndex]?.spineColor ?? '#6b5a45',
+    darkScheme,
+  );
   let tintTo: ThemePalette = tintFrom;
 
   // ---------------------------------------------------------------------
   // Scene
   // ---------------------------------------------------------------------
   const scene = new THREE.Scene();
-  const sceneBackground = new THREE.Color();
-  scene.background = sceneBackground;
-  scene.fog = new THREE.Fog(0xffffff, 2.4, 15);
+  // No background: the page shows through. Fog is what dissolves the far end
+  // of the run, so it must be the paper colour exactly.
+  scene.fog = new THREE.Fog(tintFrom.fog.getHex(), 2.4, 15);
 
   // Book proportions and shelf-slot spacing — computed up front so the
-  // lights, backdrop and camera can all be sized against the real run
-  // length instead of a fixed guess.
+  // lights, ledge and camera can all be sized against the real run length
+  // instead of a fixed guess.
   const dims = books.map(computeBookDimensions);
   const maxWidth = dims.reduce((max, d) => Math.max(max, d.width), 0.42);
   const maxDepth = dims.reduce((max, d) => Math.max(max, d.depth), 0.06);
@@ -321,39 +371,35 @@ export const mountShelf: MountShelf = async (container, options) => {
   // Half the extra room the turned-out book needs beyond its own slot.
   const spread = Math.max(0, (maxWidth + SELECTED_CLEARANCE - spacing) / 2);
   const shelfTopY = 0;
-  // Only books within the fade radius are ever drawn, so the board needs to
-  // span that run plus a margin — not the full 22-volume collection.
-  const shelfLength = Math.max(
-    3,
-    Math.min(books.length, FADE_END_DISTANCE * 2 + 2) * spacing + spread * 2 + maxWidth * 1.6,
-  );
-  const halfFrameWidth = (TARGET_VISIBLE_SLOTS * spacing) / 2 + spread;
+
+  // Recomputed in `updateCameraFraming` from the frame the camera actually
+  // ends up with, so the run always fades out just past the edge of the
+  // canvas rather than at a distance guessed from a reference viewport.
+  let fadeStartDistance = 5.5;
+  let fadeEndDistance = 7.5;
 
   const camera = new THREE.PerspectiveCamera(CAMERA_VERTICAL_FOV, 1, 0.1, 40);
-  const cameraTarget = new THREE.Vector3(0, 0.6, 0);
+  const cameraTarget = new THREE.Vector3(0, 0.54, 0);
   camera.position.set(0.3, 0.9, 3);
   camera.lookAt(cameraTarget);
 
-  const hemiLight = new THREE.HemisphereLight(0xffffff, 0x33241a, 0.75);
+  const hemiLight = new THREE.HemisphereLight(0xffffff, 0x33241a, 0.95);
   scene.add(hemiLight);
 
-  const keyLight = new THREE.DirectionalLight(0xfff1d8, 1.3);
+  const keyLight = new THREE.DirectionalLight(0xfff1d8, 1.05);
   keyLight.position.set(-2.4, 3.1, 3.3);
   keyLight.castShadow = true;
   keyLight.shadow.mapSize.set(1024, 1024);
-  keyLight.shadow.camera.left = -(halfFrameWidth + 1);
-  keyLight.shadow.camera.right = halfFrameWidth + 1;
   keyLight.shadow.camera.top = 2.1;
   keyLight.shadow.camera.bottom = -0.6;
   keyLight.shadow.camera.near = 0.5;
   keyLight.shadow.camera.far = 8;
   keyLight.shadow.bias = -0.0018;
   keyLight.shadow.normalBias = 0.01;
-  keyLight.shadow.radius = 2.5;
-  keyLight.shadow.camera.updateProjectionMatrix();
+  keyLight.shadow.radius = 4;
   scene.add(keyLight);
 
-  const fillLight = new THREE.DirectionalLight(0xcfe0ea, 0.32);
+  const fillLight = new THREE.DirectionalLight(0xcfe0ea, 0.42);
   fillLight.position.set(2.6, 1.6, 2.4);
   scene.add(fillLight);
 
@@ -361,46 +407,31 @@ export const mountShelf: MountShelf = async (container, options) => {
   rimLight.position.set(0.4, 2.4, -1.6);
   scene.add(rimLight);
 
-  // Backdrop — tinted with the same palette as the background for a seamless
-  // studio wall. Sized generously and re-scaled on resize (see
-  // `updateCameraFraming`) so it always covers the frustum, however far the
-  // camera has to sit back to frame the full run of books.
-  const backdropGeometry = new THREE.PlaneGeometry(1, 1);
-  const backdropMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, fog: true });
-  const backdrop = new THREE.Mesh(backdropGeometry, backdropMaterial);
-  backdrop.position.set(0, 2.2, -3.4);
-  scene.add(backdrop);
-  disposables.push(backdropGeometry, backdropMaterial);
-
+  // The ledge. A unit-length board scaled on every resize so it always runs
+  // clear off both edges of the frame, whatever shape the canvas takes.
   const woodTexture = createWoodGrainTexture();
-  woodTexture.repeat.set(shelfLength * 1.6, 1);
   disposables.push(woodTexture);
 
-  const shelfBoardGeometry = new THREE.BoxGeometry(shelfLength, 0.08, 0.5);
+  // One plank, deep enough that even the volume drawn forward still stands on
+  // it. An earlier version added a separate front lip, but that box overlapped
+  // the books in Z and sliced a bright band across every spine.
+  const shelfBoardGeometry = new THREE.BoxGeometry(1, 0.07, LEDGE_DEPTH);
   const shelfBoardMaterial = new THREE.MeshStandardMaterial({
     map: woodTexture,
-    roughness: 0.72,
+    roughness: 0.68,
     metalness: 0.02,
   });
   const shelfBoard = new THREE.Mesh(shelfBoardGeometry, shelfBoardMaterial);
-  shelfBoard.position.set(0, shelfTopY - 0.04, -0.08);
+  shelfBoard.position.set(0, shelfTopY - 0.035, 0.02);
   shelfBoard.receiveShadow = true;
-  shelfBoard.castShadow = true;
   scene.add(shelfBoard);
   disposables.push(shelfBoardGeometry, shelfBoardMaterial);
 
-  const shelfLipGeometry = new THREE.BoxGeometry(shelfLength, 0.02, 0.54);
-  const shelfLipMaterial = new THREE.MeshStandardMaterial({
-    map: woodTexture,
-    roughness: 0.6,
-    metalness: 0.02,
-    color: 0x3c2c1c,
-  });
-  const shelfLip = new THREE.Mesh(shelfLipGeometry, shelfLipMaterial);
-  shelfLip.position.set(0, shelfTopY - 0.005, 0.12);
-  shelfLip.receiveShadow = true;
-  scene.add(shelfLip);
-  disposables.push(shelfLipGeometry, shelfLipMaterial);
+  /** Tints the ledge so it belongs to the current theme rather than to a wood swatch. */
+  function applySurfaceTheme(): void {
+    shelfBoardMaterial.color.setHex(darkScheme ? 0x6b5c4a : 0xc7b294);
+  }
+  applySurfaceTheme();
 
   const shelfGroup = new THREE.Group();
   scene.add(shelfGroup);
@@ -415,6 +446,12 @@ export const mountShelf: MountShelf = async (container, options) => {
   disposables.push(pageEdgeTexture, contactShadowTexture, contactShadowGeometry);
 
   const raycaster = new THREE.Raycaster();
+
+  let pendingCovers = books.length;
+  function noteCoverSettled(): void {
+    pendingCovers -= 1;
+    if (pendingCovers <= 0 && !destroyed) options.onReady?.();
+  }
 
   function buildBookRig(book: ShelfBook, index: number, dimensions: BookDimensions): BookRig {
     const root = new THREE.Group();
@@ -470,13 +507,14 @@ export const mountShelf: MountShelf = async (container, options) => {
     mesh.userData.bookIndex = index;
     motion.add(mesh);
 
-    const shadowMesh = new THREE.Mesh(contactShadowGeometry, new THREE.MeshBasicMaterial({
+    const shadowMaterial = new THREE.MeshBasicMaterial({
       map: contactShadowTexture,
       transparent: true,
       opacity: 0.32,
       depthWrite: false,
-    }));
-    disposables.push(shadowMesh.material as THREE.Material);
+    });
+    const shadowMesh = new THREE.Mesh(contactShadowGeometry, shadowMaterial);
+    disposables.push(shadowMaterial);
     shadowMesh.rotation.x = -Math.PI / 2;
     shadowMesh.scale.set(dimensions.width * 1.7, dimensions.width * 1.1, 1);
     shadowMesh.renderOrder = -1;
@@ -496,7 +534,7 @@ export const mountShelf: MountShelf = async (container, options) => {
         frontMaterial.needsUpdate = true;
         disposables.push(texture);
       }
-      hideLoadingNote();
+      noteCoverSettled();
       requestRenderSoon();
     });
 
@@ -521,10 +559,25 @@ export const mountShelf: MountShelf = async (container, options) => {
       });
     }
 
-    return { book, index, dims: dimensions, root, motion, mesh, shadowMesh, materials };
+    const lean = (seededRandom(hashSeed(`${book.id}-lean`))() * 2 - 1) * MAX_LEAN;
+
+    return {
+      book,
+      index,
+      dims: dimensions,
+      root,
+      motion,
+      mesh,
+      shadowMesh,
+      shadowMaterial,
+      materials,
+      lean,
+      hover: 0,
+    };
   }
 
   const rigs: BookRig[] = books.map((book, index) => buildBookRig(book, index, dims[index]));
+  if (books.length === 0) options.onReady?.();
 
   // ---------------------------------------------------------------------
   // Pointer parallax (ambient, disabled under reduced motion)
@@ -542,7 +595,10 @@ export const mountShelf: MountShelf = async (container, options) => {
 
   function pickBookAt(ndc: THREE.Vector2): number {
     raycaster.setFromCamera(ndc, camera);
-    const hits = raycaster.intersectObjects(rigs.map((rig) => rig.mesh), false);
+    const hits = raycaster.intersectObjects(
+      rigs.filter((rig) => rig.mesh.visible).map((rig) => rig.mesh),
+      false,
+    );
     if (hits.length === 0) return -1;
     const hit = hits[0];
     return typeof hit.object.userData.bookIndex === 'number' ? hit.object.userData.bookIndex : -1;
@@ -558,48 +614,16 @@ export const mountShelf: MountShelf = async (container, options) => {
   function announceSelection(): void {
     const book = currentBook();
     if (!book) return;
-    liveRegion.textContent = formatSelected(
-      labels.selected,
-      book,
-      currentIndex + 1,
-      books.length,
-    );
+    liveRegion.textContent = formatSelected(labels.selected, book, currentIndex + 1, total);
     // Without these a non-visual reader hears one book at a time with no sense
     // of how long the shelf is or where they are on it.
-    region.setAttribute('aria-setsize', String(books.length));
+    region.setAttribute('aria-setsize', String(total));
     region.setAttribute('aria-posinset', String(currentIndex + 1));
-  }
-
-  function goTo(targetIndex: number): void {
-    if (books.length === 0) return;
-    const clamped = clampIndex(targetIndex);
-    const now = performance.now();
-    if (clamped === currentIndex) {
-      requestRenderSoon();
-      return;
-    }
-    currentIndex = clamped;
-    if (reducedMotion) {
-      navTween.snapTo(currentIndex);
-    } else {
-      navTween.retarget(currentIndex, now, NAV_DURATION_MS);
-    }
-
-    const nextPalette = themePalette(books[currentIndex].spineColor);
-    tintFrom = currentPaletteSnapshot(now);
-    tintTo = nextPalette;
-    if (reducedMotion) tintTween.snapTo(1);
-    else tintTween.retarget(1, now, TINT_DURATION_MS);
-
-    announceSelection();
-    options.onSelect?.(books[currentIndex], currentIndex);
-    requestRenderSoon();
   }
 
   function currentPaletteSnapshot(now: number): ThemePalette {
     const p = tintTween.progressAt(now);
     return {
-      background: tintFrom.background.clone().lerp(tintTo.background, p),
       fog: tintFrom.fog.clone().lerp(tintTo.fog, p),
       hemiSky: tintFrom.hemiSky.clone().lerp(tintTo.hemiSky, p),
       hemiGround: tintFrom.hemiGround.clone().lerp(tintTo.hemiGround, p),
@@ -608,9 +632,120 @@ export const mountShelf: MountShelf = async (container, options) => {
     };
   }
 
+  /**
+   * Moves the selection to `index` and re-tints the scene. Called both by
+   * discrete navigation and, live, while the reader scrubs — hence the
+   * `announce` switch: a screen reader wants the destination, not every
+   * volume the carriage swept past.
+   */
+  function applySelection(index: number, announce: boolean): void {
+    if (index < 0 || index === currentIndex) return;
+    currentIndex = index;
+    const now = performance.now();
+    tintFrom = currentPaletteSnapshot(now);
+    tintTo = themePalette(paperColor, books[currentIndex].spineColor, darkScheme);
+    if (reducedMotion) tintTween.snapTo(1);
+    else tintTween.retarget(1, now, TINT_DURATION_MS);
+    if (announce) announceSelection();
+    options.onSelect?.(books[currentIndex], currentIndex);
+  }
+
+  /** Retints without moving, e.g. after the colour scheme flips. */
+  function refreshTheme(): void {
+    paperColor = readCssColor(document.documentElement, '--paper', '#f7f3ec');
+    const palette = themePalette(
+      paperColor,
+      books[currentIndex]?.spineColor ?? '#6b5a45',
+      darkScheme,
+    );
+    tintFrom = palette;
+    tintTo = palette;
+    tintTween.snapTo(1);
+    applySurfaceTheme();
+    requestRenderSoon();
+  }
+
+  /** Eases the carriage to an absolute (unwrapped) position. */
+  function glideTo(position: number, durationMs: number): void {
+    if (total === 0) return;
+    const now = performance.now();
+    if (livePosition !== null) {
+      navTween.snapTo(livePosition);
+      livePosition = null;
+    }
+    targetPosition = wraps ? position : THREE.MathUtils.clamp(position, 0, total - 1);
+    if (reducedMotion) navTween.snapTo(targetPosition);
+    else navTween.retarget(targetPosition, now, durationMs, easeInOutCubic);
+    applySelection(normaliseIndex(targetPosition), true);
+    requestRenderSoon();
+  }
+
+  /** Steps by whole slots from wherever the carriage is heading. */
+  function stepBy(slots: number): void {
+    const from = livePosition ?? navTween.target;
+    glideTo(Math.round(from) + slots, STEP_DURATION_MS);
+  }
+
+  /** Travels to a specific volume by the shorter way round. */
+  function goToIndex(index: number): void {
+    if (total === 0) return;
+    const from = livePosition ?? navTween.target;
+    const wanted = normaliseIndex(index);
+    const delta = slotOffset(wanted, from);
+    glideTo(Math.round(from) + Math.round(delta), STEP_DURATION_MS);
+  }
+
   function getPosition(now: number): number {
     if (livePosition !== null) return livePosition;
     return navTween.valueAt(now);
+  }
+
+  // ---------------------------------------------------------------------
+  // Hand scrubbing — wheel and drag both write to `livePosition`, then hand
+  // the carriage back to the tween when they let go.
+  // ---------------------------------------------------------------------
+  let settleTimer = 0;
+
+  function cancelSettle(): void {
+    if (settleTimer) {
+      window.clearTimeout(settleTimer);
+      settleTimer = 0;
+    }
+  }
+
+  function beginScrub(): void {
+    cancelSettle();
+    if (livePosition === null) livePosition = navTween.valueAt(performance.now());
+  }
+
+  function scrubTo(position: number): void {
+    livePosition = wraps ? position : THREE.MathUtils.clamp(position, 0, total - 1);
+    // The caption tracks the carriage live; only the settle announces.
+    applySelection(normaliseIndex(livePosition), false);
+    requestRenderSoon();
+  }
+
+  /**
+   * Lets go of the carriage. `velocity` is in slots per second: the shelf
+   * projects where a throw of that speed would come to rest, clamps it to a
+   * sane distance, and eases onto the nearest volume from there.
+   */
+  function settle(velocity = 0): void {
+    cancelSettle();
+    if (livePosition === null) return;
+    const projected =
+      livePosition + THREE.MathUtils.clamp(velocity * FLICK_PROJECTION_S, -FLICK_MAX_SLOTS, FLICK_MAX_SLOTS);
+    const landing = Math.round(projected);
+    const travel = Math.abs(landing - livePosition);
+    const duration = THREE.MathUtils.clamp(SETTLE_MIN_MS + travel * 110, SETTLE_MIN_MS, SETTLE_MAX_MS);
+    const now = performance.now();
+    navTween.snapTo(livePosition);
+    livePosition = null;
+    targetPosition = wraps ? landing : THREE.MathUtils.clamp(landing, 0, total - 1);
+    if (reducedMotion) navTween.snapTo(targetPosition);
+    else navTween.retarget(targetPosition, now, duration, easeOutQuint);
+    applySelection(normaliseIndex(targetPosition), true);
+    requestRenderSoon();
   }
 
   // ---------------------------------------------------------------------
@@ -618,32 +753,48 @@ export const mountShelf: MountShelf = async (container, options) => {
   // ---------------------------------------------------------------------
   function updateTint(now: number): void {
     const p = tintTween.progressAt(now);
-    sceneBackground.copy(tintFrom.background).lerp(tintTo.background, p);
-    if (scene.fog && scene.fog instanceof THREE.Fog) scene.fog.color.copy(tintFrom.fog).lerp(tintTo.fog, p);
+    if (scene.fog instanceof THREE.Fog) scene.fog.color.copy(tintFrom.fog).lerp(tintTo.fog, p);
     hemiLight.color.copy(tintFrom.hemiSky).lerp(tintTo.hemiSky, p);
     hemiLight.groundColor.copy(tintFrom.hemiGround).lerp(tintTo.hemiGround, p);
     keyLight.color.copy(tintFrom.key).lerp(tintTo.key, p);
     rimLight.color.copy(tintFrom.rim).lerp(tintTo.rim, p);
-    backdropMaterial.color.copy(sceneBackground);
   }
 
-  function layoutBooks(now: number, elapsed: number): void {
+  let lastReportedPosition = Number.NaN;
+  function reportProgress(position: number): void {
+    if (Math.abs(position - lastReportedPosition) < 0.002) return;
+    lastReportedPosition = position;
+    options.onProgress?.(position, total);
+  }
+
+  function layoutBooks(now: number, elapsed: number, dt: number): void {
     const position = getPosition(now);
+    reportProgress(position);
+    const hoverRate = Math.min(1, dt * 9);
+
     for (const rig of rigs) {
-      const offset = rig.index - position;
+      const offset = slotOffset(rig.index, position);
       const distance = Math.abs(offset);
       const focus = smootherstep(1 - clamp01(distance));
+
+      const wantsHover = hoverIndex === rig.index && focus < 0.9 ? 1 : 0;
+      rig.hover += (wantsHover - rig.hover) * hoverRate;
+      const hover = reducedMotion ? wantsHover : rig.hover;
 
       const rotationY = lerp(REST_ROTATION_Y, SELECTED_ROTATION_Y, focus);
       const scale = 1 + focus * 0.05;
       // tanh saturates, so books past the immediate neighbours keep uniform
       // spacing while the gap around the selection opens smoothly.
       const x = offset * spacing + Math.tanh(offset * SPREAD_FALLOFF) * spread;
-      const y = shelfTopY + rig.dims.height / 2 + focus * 0.04;
-      const z = focus * 0.34;
+      // A hovered volume rides up out of the run, the way you tip one out with
+      // a finger before deciding to take it.
+      const y = shelfTopY + rig.dims.height / 2 + focus * 0.04 + hover * 0.05;
+      const z = focus * SELECTED_LIFT_Z + hover * 0.05;
 
       rig.root.position.set(x, y, z);
       rig.root.rotation.y = rotationY;
+      // Books lean while they are racked and stand up as they come forward.
+      rig.root.rotation.z = rig.lean * (1 - focus) * (1 - hover * 0.6);
       rig.root.scale.setScalar(scale);
 
       const idle = reducedMotion ? 0 : Math.sin(elapsed * 0.9 + rig.index * 0.7) * 0.01 * focus;
@@ -656,13 +807,13 @@ export const mountShelf: MountShelf = async (container, options) => {
         rig.motion.rotation.y = 0;
       }
 
-      const fadeT = clamp01((distance - FADE_START_DISTANCE) / (FADE_END_DISTANCE - FADE_START_DISTANCE));
+      const fadeT = clamp01((distance - fadeStartDistance) / Math.max(0.001, fadeEndDistance - fadeStartDistance));
       const opacity = 1 - smootherstep(fadeT);
       for (const material of rig.materials) material.opacity = opacity;
       rig.mesh.visible = opacity > 0.02;
 
       rig.shadowMesh.position.set(x, shelfTopY - 0.001, z + rig.dims.depth * 0.5 + 0.06);
-      (rig.shadowMesh.material as THREE.MeshBasicMaterial).opacity = 0.32 * opacity;
+      rig.shadowMaterial.opacity = 0.32 * opacity * (1 - hover * 0.45);
       rig.shadowMesh.visible = opacity > 0.02;
     }
   }
@@ -684,7 +835,7 @@ export const mountShelf: MountShelf = async (container, options) => {
     lastFrameTime = now;
     const elapsed = now / 1000;
     updatePointerSmoothing(dt);
-    layoutBooks(now, elapsed);
+    layoutBooks(now, elapsed, dt);
     updateTint(now);
     renderer.render(scene, camera);
   }
@@ -747,7 +898,9 @@ export const mountShelf: MountShelf = async (container, options) => {
    * across the frame *and* the (slightly popped-forward, slightly scaled
    * up) selected book stays fully inside the frame with vertical margin.
    * Both constraints are distance-only (FOV is fixed), so we solve each
-   * independently and take the larger, safer distance.
+   * independently and take the larger, safer distance. Everything that has
+   * to match the resulting frame — the fade radius, the ledge, the shadow
+   * camera, the fog — is then derived from it rather than guessed.
    */
   function updateCameraFraming(): void {
     const halfVerticalFov = THREE.MathUtils.degToRad(CAMERA_VERTICAL_FOV / 2);
@@ -764,7 +917,7 @@ export const mountShelf: MountShelf = async (container, options) => {
     const distanceForSlots = frameHalfWidth / Math.max(0.05, tanHalf * aspect);
     // Half the book's height, scaled for the selected state and for the fact
     // that popping forward in Z makes it read larger than its world size.
-    const selectedHalfHeight = 0.62;
+    const selectedHalfHeight = 0.58;
     const distanceForHeight = (selectedHalfHeight + VERTICAL_MARGIN) / tanHalf;
     const distance = THREE.MathUtils.clamp(
       Math.max(distanceForSlots, distanceForHeight),
@@ -772,15 +925,36 @@ export const mountShelf: MountShelf = async (container, options) => {
       CAMERA_MAX_DISTANCE,
     );
 
-    // A gentle, consistent 3/4 angle rather than a dead-on frontal shot,
-    // scaled with distance so the deflection reads the same at any size.
-    camera.position.set(distance * 0.11, cameraTarget.y + distance * 0.045, distance);
+    // Dead-on and slightly above. Yawing the camera off-axis put the ledge on
+    // a diagonal, which fights every horizontal rule on the page; the lift
+    // alone is enough to keep the shot from reading as an elevation drawing.
+    camera.position.set(0, cameraTarget.y + distance * 0.05, distance);
     camera.lookAt(cameraTarget);
+    camera.updateProjectionMatrix();
 
-    // Keep the backdrop comfortably oversized relative to the current frustum.
-    const backdropScale = Math.max(16, distance * 2.6);
-    backdrop.scale.set(backdropScale, backdropScale * 0.6, 1);
-    backdrop.position.z = -Math.max(3.4, distance * 0.7);
+    // How much of the run the frame can actually hold, in slots — the fade has
+    // to finish inside that, or the shelf reads as a floating cluster on wide
+    // canvases and as an abrupt cut on narrow ones.
+    const visibleHalfWidth = tanHalf * aspect * distance;
+    const visibleHalfSlots = visibleHalfWidth / spacing;
+    const hardLimit = wraps ? total / 2 : Number.POSITIVE_INFINITY;
+    fadeEndDistance = Math.max(2.5, Math.min(hardLimit, visibleHalfSlots + 1.5));
+    fadeStartDistance = Math.max(1.5, fadeEndDistance - 2.6);
+
+    // The ledge runs clear off both edges, and the shadow camera covers it.
+    const ledgeLength = visibleHalfWidth * 2 + maxWidth * 2 + 1;
+    shelfBoard.scale.x = ledgeLength;
+    woodTexture.repeat.set(ledgeLength * 1.6, 1);
+    keyLight.shadow.camera.left = -(visibleHalfWidth + 1);
+    keyLight.shadow.camera.right = visibleHalfWidth + 1;
+    keyLight.shadow.camera.updateProjectionMatrix();
+
+    // Gentle haze: nothing in front of the selected volume is touched, and the
+    // far end of the run dissolves into the page instead of stopping.
+    if (scene.fog instanceof THREE.Fog) {
+      scene.fog.near = distance * 0.95;
+      scene.fog.far = distance + Math.max(3, visibleHalfWidth * 2.4);
+    }
   }
 
   function handleResize(): void {
@@ -788,9 +962,7 @@ export const mountShelf: MountShelf = async (container, options) => {
     const height = Math.max(1, container.clientHeight);
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
-    camera.updateProjectionMatrix();
     updateCameraFraming();
-    camera.updateProjectionMatrix();
     requestRenderSoon();
   }
 
@@ -822,29 +994,73 @@ export const mountShelf: MountShelf = async (container, options) => {
   };
   reducedMotionQuery.addEventListener('change', onReducedMotionChange);
 
+  const onSchemeChange = (event: MediaQueryListEvent): void => {
+    darkScheme = event.matches;
+    refreshTheme();
+  };
+  darkSchemeQuery.addEventListener('change', onSchemeChange);
+
   // ---------------------------------------------------------------------
   // Input: wheel, drag-to-scrub, click, keyboard
   // ---------------------------------------------------------------------
-  let wheelAccumulator = 0;
-  const onWheel = (event: WheelEvent): void => {
-    event.preventDefault();
-    wheelAccumulator += event.deltaY;
-    while (Math.abs(wheelAccumulator) >= WHEEL_STEP) {
-      if (wheelAccumulator > 0) {
-        goTo(currentIndex + 1);
-        wheelAccumulator -= WHEEL_STEP;
-      } else {
-        goTo(currentIndex - 1);
-        wheelAccumulator += WHEEL_STEP;
-      }
+
+  /** Converts a wheel delta to pixels, whatever unit the device reports in. */
+  function toPixels(delta: number, deltaMode: number): number {
+    if (deltaMode === 1) return delta * 16; // lines
+    if (deltaMode === 2) return delta * 400; // pages
+    return delta;
+  }
+
+  /**
+   * The lateral component of a wheel gesture, or 0 if there isn't one.
+   *
+   * Vertical scrolling stays the page's. A full-bleed stage that swallowed it
+   * would strand the reader on a shelf that loops and therefore has no end to
+   * escape past — so the shelf only claims sideways trackpad swipes, tilt
+   * wheels and shift+wheel. Dragging, the arrow keys and the two steppers all
+   * still browse it, and the cursor advertises the drag.
+   */
+  function lateralPixels(event: WheelEvent): number {
+    if (Math.abs(event.deltaX) >= Math.abs(event.deltaY)) {
+      return toPixels(event.deltaX, event.deltaMode);
     }
+    return event.shiftKey ? toPixels(event.deltaY, event.deltaMode) : 0;
+  }
+
+  let reducedWheelAccumulator = 0;
+  const onWheel = (event: WheelEvent): void => {
+    const pixels = lateralPixels(event);
+    if (pixels === 0) return;
+    event.preventDefault();
+
+    if (reducedMotion) {
+      // No scrubbing under reduced motion: step, once, per notch.
+      reducedWheelAccumulator += pixels;
+      while (Math.abs(reducedWheelAccumulator) >= WHEEL_PIXELS_PER_SLOT) {
+        const direction = reducedWheelAccumulator > 0 ? 1 : -1;
+        stepBy(direction);
+        reducedWheelAccumulator -= direction * WHEEL_PIXELS_PER_SLOT;
+      }
+      return;
+    }
+
+    beginScrub();
+    scrubTo((livePosition ?? 0) + pixels / WHEEL_PIXELS_PER_SLOT);
+    cancelSettle();
+    settleTimer = window.setTimeout(() => {
+      settleTimer = 0;
+      settle();
+    }, WHEEL_SETTLE_DELAY_MS);
   };
   canvas.addEventListener('wheel', onWheel, { passive: false });
 
   interface DragState {
     pointerId: number;
     startX: number;
-    startPosition: number;
+    lastX: number;
+    lastTime: number;
+    /** Slots per second, exponentially smoothed. */
+    velocity: number;
     moved: boolean;
   }
   let drag: DragState | null = null;
@@ -855,10 +1071,13 @@ export const mountShelf: MountShelf = async (container, options) => {
     // descendant does not reliably focus an ancestor in every engine —
     // focus the region explicitly so keyboard nav works right after a click.
     region.focus({ preventScroll: true });
+    cancelSettle();
     drag = {
       pointerId: event.pointerId,
       startX: event.clientX,
-      startPosition: getPosition(performance.now()),
+      lastX: event.clientX,
+      lastTime: event.timeStamp,
+      velocity: 0,
       moved: false,
     };
     canvas.setPointerCapture(event.pointerId);
@@ -873,13 +1092,19 @@ export const mountShelf: MountShelf = async (container, options) => {
     }
 
     if (drag && drag.pointerId === event.pointerId) {
-      const dx = event.clientX - drag.startX;
-      if (Math.abs(dx) > DRAG_MOVE_THRESHOLD) drag.moved = true;
+      if (!drag.moved && Math.abs(event.clientX - drag.startX) > DRAG_MOVE_THRESHOLD) {
+        drag.moved = true;
+        beginScrub();
+      }
       if (drag.moved) {
+        const dx = event.clientX - drag.lastX;
+        const dt = Math.max(1, event.timeStamp - drag.lastTime) / 1000;
         const slots = -dx / DRAG_PIXELS_PER_SLOT;
-        const next = THREE.MathUtils.clamp(drag.startPosition + slots, 0, Math.max(0, books.length - 1));
-        livePosition = next;
-        requestRenderSoon();
+        scrubTo((livePosition ?? 0) + slots);
+        // Smoothed so one stuttering sample cannot throw the whole flick.
+        drag.velocity = lerp(drag.velocity, slots / dt, 0.35);
+        drag.lastX = event.clientX;
+        drag.lastTime = event.timeStamp;
       }
       return;
     }
@@ -889,33 +1114,31 @@ export const mountShelf: MountShelf = async (container, options) => {
       if (nextHover !== hoverIndex) {
         hoverIndex = nextHover;
         canvas.style.cursor = hoverIndex >= 0 ? 'pointer' : 'grab';
+        requestRenderSoon();
       }
     }
   };
 
   const onPointerUp = (event: PointerEvent): void => {
-    if (drag && drag.pointerId === event.pointerId) {
-      const wasMoved = drag.moved;
-      const settlePosition = livePosition;
-      canvas.releasePointerCapture(event.pointerId);
-      canvas.style.cursor = 'grab';
-      drag = null;
-      if (wasMoved && settlePosition !== null) {
-        livePosition = null;
-        goTo(Math.round(settlePosition));
-      } else {
-        livePosition = null;
-        const clicked = pickBookAt(ndcFromEvent(event));
-        if (clicked >= 0) {
-          if (clicked === currentIndex) {
-            const book = currentBook();
-            if (book) options.onActivate?.(book, currentIndex);
-          } else {
-            goTo(clicked);
-          }
-        }
-      }
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const { moved, velocity } = drag;
+    if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+    canvas.style.cursor = hoverIndex >= 0 ? 'pointer' : 'grab';
+    drag = null;
+
+    if (moved) {
+      settle(reducedMotion ? 0 : velocity);
       return;
+    }
+
+    // A tap: the centred volume opens, any other volume comes to the centre.
+    const clicked = pickBookAt(ndcFromEvent(event));
+    if (clicked < 0) return;
+    if (clicked === currentIndex) {
+      const book = currentBook();
+      if (book) options.onActivate?.(book, currentIndex);
+    } else {
+      goToIndex(clicked);
     }
   };
 
@@ -925,6 +1148,7 @@ export const mountShelf: MountShelf = async (container, options) => {
     if (!drag) {
       hoverIndex = -1;
       canvas.style.cursor = 'grab';
+      requestRenderSoon();
     }
   };
 
@@ -935,18 +1159,24 @@ export const mountShelf: MountShelf = async (container, options) => {
   canvas.addEventListener('pointerleave', onPointerLeave);
 
   const onKeyDown = (event: KeyboardEvent): void => {
-    if (event.key === 'ArrowRight') {
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
       event.preventDefault();
-      goTo(currentIndex + 1);
-    } else if (event.key === 'ArrowLeft') {
+      stepBy(1);
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
       event.preventDefault();
-      goTo(currentIndex - 1);
+      stepBy(-1);
+    } else if (event.key === 'PageDown') {
+      event.preventDefault();
+      stepBy(5);
+    } else if (event.key === 'PageUp') {
+      event.preventDefault();
+      stepBy(-5);
     } else if (event.key === 'Home') {
       event.preventDefault();
-      goTo(0);
+      goToIndex(0);
     } else if (event.key === 'End') {
       event.preventDefault();
-      goTo(books.length - 1);
+      goToIndex(total - 1);
     } else if ((event.key === 'Enter' || event.key === ' ') && event.target === region) {
       event.preventDefault();
       const book = currentBook();
@@ -955,23 +1185,14 @@ export const mountShelf: MountShelf = async (container, options) => {
   };
   region.addEventListener('keydown', onKeyDown);
 
-  const onPreviousClick = (): void => goTo(currentIndex - 1);
-  const onNextClick = (): void => goTo(currentIndex + 1);
-  const onOpenClick = (): void => {
-    const book = currentBook();
-    if (book) options.onActivate?.(book, currentIndex);
-  };
-  previousButton.addEventListener('click', onPreviousClick);
-  nextButton.addEventListener('click', onNextClick);
-  openButton.addEventListener('click', onOpenClick);
-
   // ---------------------------------------------------------------------
   // Initial paint
   // ---------------------------------------------------------------------
   handleResize();
   announceSelection();
   if (currentIndex >= 0) options.onSelect?.(books[currentIndex], currentIndex);
-  layoutBooks(performance.now(), performance.now() / 1000);
+  reportProgress(targetPosition);
+  layoutBooks(performance.now(), performance.now() / 1000, 0.016);
   updateTint(performance.now());
   renderer.render(scene, camera);
   ensureLoopRunning();
@@ -981,22 +1202,24 @@ export const mountShelf: MountShelf = async (container, options) => {
   // ---------------------------------------------------------------------
   const handle: ShelfHandle = {
     select(index: number) {
-      goTo(index);
+      goToIndex(index);
     },
     next() {
-      goTo(currentIndex + 1);
+      stepBy(1);
     },
     previous() {
-      goTo(currentIndex - 1);
+      stepBy(-1);
     },
     destroy() {
       if (destroyed) return;
       destroyed = true;
       stopLoop();
+      cancelSettle();
       resizeObserver.disconnect();
       intersectionObserver.disconnect();
       document.removeEventListener('visibilitychange', onVisibilityChange);
       reducedMotionQuery.removeEventListener('change', onReducedMotionChange);
+      darkSchemeQuery.removeEventListener('change', onSchemeChange);
       canvas.removeEventListener('wheel', onWheel);
       canvas.removeEventListener('pointerdown', onPointerDown);
       canvas.removeEventListener('pointermove', onPointerMove);
@@ -1004,9 +1227,6 @@ export const mountShelf: MountShelf = async (container, options) => {
       canvas.removeEventListener('pointercancel', onPointerUp);
       canvas.removeEventListener('pointerleave', onPointerLeave);
       region.removeEventListener('keydown', onKeyDown);
-      previousButton.removeEventListener('click', onPreviousClick);
-      nextButton.removeEventListener('click', onNextClick);
-      openButton.removeEventListener('click', onOpenClick);
 
       // Every geometry/material/texture created above (including each book's
       // own geometry and its contact-shadow material) was pushed into

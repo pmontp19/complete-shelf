@@ -13,6 +13,7 @@
   --ink-soft: #4f463c;
   --ink-faint: #706557; /* 5.15:1 on --paper, 4.68:1 on --paper-sunk */
   --rule: #ddd2c2;
+  --rule-strong: #c6b8a3;
   --accent: #7a3b2e;
   --accent-soft: #a8614f;
 
@@ -29,11 +30,17 @@
   --gutter: clamp(1.25rem, 4vw, 3.5rem);
   --shell: 76rem;
 
+  /* Uppercase micro-labels are set at one tracking everywhere on the site. */
+  --label-size: 0.7rem;
+  --label-tracking: 0.15em;
+
   --radius: 3px;
   --shadow-sm: 0 1px 2px rgb(30 26 22 / 0.06), 0 2px 8px rgb(30 26 22 / 0.05);
   --shadow-md: 0 2px 6px rgb(30 26 22 / 0.08), 0 12px 32px rgb(30 26 22 / 0.1);
+  --shadow-lg: 0 4px 12px rgb(30 26 22 / 0.1), 0 30px 70px rgb(30 26 22 / 0.14);
 
   --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -45,11 +52,13 @@
     --ink-soft: #c3b8a8;
     --ink-faint: #8d8274;
     --rule: #332c24;
+    --rule-strong: #4a4036;
     --accent: #d8927f;
     --accent-soft: #e8b3a3;
     --tint-contrast: #16130f;
     --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
     --shadow-md: 0 2px 6px rgb(0 0 0 / 0.45), 0 16px 40px rgb(0 0 0 / 0.5);
+    --shadow-lg: 0 4px 12px rgb(0 0 0 / 0.5), 0 34px 80px rgb(0 0 0 / 0.6);
   }
 }
 
@@ -91,26 +100,37 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* --- type ---------------------------------------------------------------- */
+
 h1,
 h2,
 h3,
 h4 {
   font-family: var(--font-serif);
   font-weight: 600;
-  line-height: 1.15;
+  line-height: 1.14;
   letter-spacing: -0.015em;
   margin: 0 0 0.5em;
   text-wrap: balance;
 }
 
 h1 {
-  font-size: clamp(2rem, 1.4rem + 2.6vw, 3.4rem);
+  font-size: clamp(2.1rem, 1.35rem + 3.2vw, 4rem);
+  letter-spacing: -0.025em;
 }
 h2 {
   font-size: clamp(1.4rem, 1.15rem + 1.1vw, 2rem);
 }
 h3 {
   font-size: clamp(1.1rem, 1rem + 0.5vw, 1.3rem);
+}
+
+/* Reserved for the one line on a page that has to carry it. */
+.display {
+  font-size: clamp(2.6rem, 1.2rem + 6vw, 6.5rem);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  margin: 0 0 0.28em;
 }
 
 p {
@@ -144,6 +164,10 @@ img {
   border-radius: 2px;
 }
 
+::selection {
+  background: color-mix(in srgb, var(--tint) 26%, transparent);
+}
+
 /* --- utilities ----------------------------------------------------------- */
 
 .shell {
@@ -153,18 +177,19 @@ img {
 
 .eyebrow {
   font-family: var(--font-sans);
-  font-size: 0.72rem;
+  font-size: var(--label-size);
   font-weight: 600;
-  letter-spacing: 0.16em;
+  letter-spacing: var(--label-tracking);
   text-transform: uppercase;
   color: var(--ink-faint);
   margin: 0 0 0.9em;
 }
 
 .lead {
-  font-size: 1.15em;
+  font-size: clamp(1.1rem, 1rem + 0.5vw, 1.35rem);
+  line-height: 1.5;
   color: var(--ink-soft);
-  max-width: 48ch;
+  max-width: 46ch;
 }
 
 .visually-hidden {
@@ -212,8 +237,8 @@ img {
   --button-fg: var(--paper);
   display: inline-flex;
   align-items: center;
-  gap: 0.5em;
-  padding: 0.7em 1.3em;
+  gap: 0.55em;
+  padding: 0.72em 1.35em;
   font-family: var(--font-sans);
   font-size: 0.9rem;
   font-weight: 500;
@@ -224,28 +249,68 @@ img {
   background: var(--button-bg);
   color: var(--button-fg);
   cursor: pointer;
-  transition: transform 160ms var(--ease), background 160ms var(--ease),
-    border-color 160ms var(--ease), color 160ms var(--ease);
+  transition: transform 200ms var(--ease), background 200ms var(--ease),
+    border-color 200ms var(--ease), color 200ms var(--ease), box-shadow 200ms var(--ease);
 }
 
 .button:hover {
   color: var(--button-fg);
   transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .button:active {
   transform: translateY(0);
+  box-shadow: none;
+}
+
+.button__arrow {
+  width: 1.05em;
+  height: 1.05em;
+  flex: none;
+  transition: transform 240ms var(--ease-out);
+}
+
+.button:hover .button__arrow {
+  transform: translateX(0.2em);
 }
 
 .button--ghost {
   --button-bg: transparent;
   --button-fg: var(--ink);
-  border-color: var(--rule);
+  border-color: var(--rule-strong);
 }
 
 .button--ghost:hover {
   --button-bg: var(--paper-raised);
   border-color: var(--ink-faint);
+}
+
+/* A text link that behaves like a button: rule underneath, arrow that walks. */
+.link-arrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  text-decoration: none;
+  padding-bottom: 0.25em;
+  border-bottom: 1px solid var(--rule-strong);
+  transition: border-color 200ms var(--ease), color 200ms var(--ease);
+}
+
+.link-arrow:hover {
+  border-bottom-color: currentColor;
+}
+
+.link-arrow svg {
+  width: 1em;
+  height: 1em;
+  transition: transform 240ms var(--ease-out);
+}
+
+.link-arrow:hover svg {
+  transform: translateX(0.2em);
 }
 
 /* --- page scaffolding ---------------------------------------------------- */
@@ -255,9 +320,29 @@ main {
 }
 
 .page-head {
-  padding: clamp(3rem, 8vw, 6rem) 0 clamp(1.5rem, 4vw, 2.5rem);
+  padding: clamp(3rem, 8vw, 6.5rem) 0 clamp(1.5rem, 4vw, 2.5rem);
 }
 
 .section {
   padding-block: clamp(2rem, 5vw, 3.5rem);
+}
+
+/* --- reveal on scroll ---------------------------------------------------- */
+
+/*
+ * Opt-in, and only ever a few pixels: editorial pages should read as printed
+ * matter arriving, not as a slideshow. The class is added by the layout only
+ * when the browser supports IntersectionObserver *and* the reader has not
+ * asked for reduced motion, so unstyled content is never left invisible.
+ */
+.js-reveal [data-reveal] {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 700ms var(--ease-out), transform 700ms var(--ease-out);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.js-reveal [data-reveal].is-revealed {
+  opacity: 1;
+  transform: none;
 }
