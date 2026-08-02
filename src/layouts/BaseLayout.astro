@@ -1,0 +1,116 @@
+---
+import '~/styles/global.css';
+import SiteHeader from '~/components/SiteHeader.astro';
+import SiteFooter from '~/components/SiteFooter.astro';
+import { LOCALES, LOCALE_TAGS, DEFAULT_LOCALE, type Locale, type Section } from '~/i18n/config';
+import { translatePath, assetPath } from '~/i18n/paths';
+import { useTranslations } from '~/i18n/ui';
+import type { PageRef } from '~/i18n/page-ref';
+
+interface Props {
+  locale: Locale;
+  /** Page title without the site suffix; the layout adds it. */
+  title: string;
+  description: string;
+  page: PageRef;
+  /** Which nav item to mark as current. */
+  current?: Section | 'home';
+  /** Absolute-ish path of a social preview image. */
+  ogImage?: string;
+  /** Cover palette of the featured book, used to tint the page. */
+  tint?: { color: string; contrast: string };
+  /** Full-bleed pages (the shelf) opt out of the default max-width main. */
+  wide?: boolean;
+}
+
+const {
+  locale,
+  title,
+  description,
+  page,
+  current = 'home',
+  ogImage,
+  tint,
+  wide = false,
+} = Astro.props;
+
+const t = useTranslations(locale);
+const fullTitle = title === t.site.name ? `${t.site.name} — ${t.site.role}` : `${title} — ${t.site.name}`;
+
+const canonical = new URL(translatePath(locale, page), Astro.site ?? Astro.url.origin);
+const alternates = LOCALES.map((code) => ({
+  code,
+  tag: LOCALE_TAGS[code],
+  href: new URL(translatePath(code, page), Astro.site ?? Astro.url.origin).href,
+}));
+
+const socialImage = new URL(ogImage ?? assetPath('og-default.png'), Astro.site ?? Astro.url.origin)
+  .href;
+
+const tintStyle = tint ? `--tint:${tint.color};--tint-contrast:${tint.contrast};` : undefined;
+
+const personSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: t.site.name,
+  jobTitle: t.site.role,
+  description,
+  url: canonical.href,
+  knowsLanguage: ['ca', 'es', 'en', 'de', 'fr'],
+};
+---
+
+<!doctype html>
+<html lang={LOCALE_TAGS[locale]} style={tintStyle}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical.href} />
+    {
+      alternates.map((alt) => (
+        <link rel="alternate" hreflang={alt.tag} href={alt.href} />
+      ))
+    }
+    <link
+      rel="alternate"
+      hreflang="x-default"
+      href={new URL(translatePath(DEFAULT_LOCALE, page), Astro.site ?? Astro.url.origin).href}
+    />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={t.site.name} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical.href} />
+    <meta property="og:image" content={socialImage} />
+    <meta property="og:locale" content={LOCALE_TAGS[locale].replace('-', '_')} />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <meta name="theme-color" content="#f7f3ec" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#16130f" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href={assetPath('favicon.svg')} type="image/svg+xml" />
+
+    {/* No webfonts on purpose: the type stacks in global.css resolve locally,
+        so the site has zero third-party requests and renders instantly offline. */}
+
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(personSchema)} />
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">{t.a11y.skipToContent}</a>
+    <SiteHeader locale={locale} page={page} current={current} />
+    <main id="main" class={wide ? 'main main--wide' : 'main'}>
+      <slot />
+    </main>
+    <SiteFooter locale={locale} />
+  </body>
+</html>
+
+<style>
+  .main:not(.main--wide) {
+    width: min(100% - var(--gutter) * 2, var(--shell));
+    margin-inline: auto;
+  }
+</style>

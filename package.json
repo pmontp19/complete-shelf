@@ -1,0 +1,30 @@
+{
+  "name": "judith-raigal-aran-web",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro check && astro build",
+    "build:fast": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "covers": "node scripts/build-covers-input.mjs && node scripts/fetch-covers.mjs",
+    "synopses": "node scripts/merge-synopses.mjs",
+    "og": "node scripts/build-og.mjs",
+    "assets": "npm run covers && npm run og",
+    "test": "node tests/smoke.mjs"
+  },
+  "dependencies": {
+    "astro": "^5.6.1",
+    "three": "^0.175.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@playwright/test": "^1.62.1",
+    "@types/three": "^0.175.0",
+    "sharp": "^0.34.1",
+    "typescript": "^5.8.3"
+  }
+}

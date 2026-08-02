@@ -1,0 +1,91 @@
+---
+/**
+ * A single 404 for the whole site. It cannot know the reader's language from a
+ * static file, so it offers every locale rather than guessing wrong.
+ */
+import { LOCALES, LOCALE_NAMES, LOCALE_TAGS, DEFAULT_LOCALE } from '~/i18n/config';
+import { homePath, sectionPath, assetPath } from '~/i18n/paths';
+import { useTranslations } from '~/i18n/ui';
+
+const t = useTranslations(DEFAULT_LOCALE);
+---
+
+<!doctype html>
+<html lang={LOCALE_TAGS[DEFAULT_LOCALE]}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>404 — {t.site.name}</title>
+    <meta name="robots" content="noindex" />
+    <link rel="icon" href={assetPath('favicon.svg')} type="image/svg+xml" />
+    <style is:global>
+      :root {
+        color-scheme: light dark;
+        --paper: #f7f3ec;
+        --ink: #1e1a16;
+        --faint: #8a7f72;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --paper: #16130f;
+          --ink: #f2ece2;
+          --faint: #8d8274;
+        }
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-content: center;
+        gap: 1.25rem;
+        padding: 2rem;
+        text-align: center;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: 'Iowan Old Style', Palatino, Georgia, serif;
+      }
+      h1 {
+        font-size: clamp(2rem, 1.4rem + 2.6vw, 3.2rem);
+        margin: 0;
+      }
+      p {
+        color: var(--faint);
+        margin: 0;
+      }
+      ul {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.35rem 1.1rem;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 0.9rem;
+      }
+      a {
+        color: inherit;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>404</h1>
+    <p>{t.site.name} — {t.site.role}</p>
+    <nav>
+      <ul>
+        {
+          LOCALES.map((code) => (
+            <li>
+              <a href={homePath(code)} lang={LOCALE_TAGS[code]}>
+                {LOCALE_NAMES[code]}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+    <p>
+      <a href={sectionPath(DEFAULT_LOCALE, 'works')}>{t.works.title}</a>
+    </p>
+  </body>
+</html>

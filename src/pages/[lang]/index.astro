@@ -1,0 +1,77 @@
+---
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import Shelf from '~/components/Shelf.astro';
+import { LOCALES, type Locale } from '~/i18n/config';
+import { sectionPath } from '~/i18n/paths';
+import { useTranslations } from '~/i18n/ui';
+import { ALL_BOOKS, paletteFor } from '~/data/books';
+
+export function getStaticPaths() {
+  return LOCALES.map((lang) => ({ params: { lang } }));
+}
+
+const locale = Astro.params.lang as Locale;
+const t = useTranslations(locale);
+
+const first = ALL_BOOKS[0];
+const tint = first
+  ? { color: paletteFor(first.id).spineColor, contrast: paletteFor(first.id).textColor }
+  : undefined;
+---
+
+<BaseLayout
+  locale={locale}
+  title={t.site.name}
+  description={t.home.metaDescription}
+  page={{ kind: 'home' }}
+  current="home"
+  tint={tint}
+  wide
+>
+  <div class="hero">
+    <div class="shell">
+      <p class="eyebrow">{t.site.tagline}</p>
+      <h1>{t.site.name}</h1>
+      <p class="lead">{t.home.heroLead}</p>
+      <p class="hint">{t.home.shelfHint}</p>
+    </div>
+  </div>
+
+  <div class="shell stage">
+    <Shelf locale={locale} />
+  </div>
+
+  <div class="shell actions">
+    <a class="button" href={sectionPath(locale, 'works')}>{t.home.ctaWorks}</a>
+    <a class="button button--ghost" href={sectionPath(locale, 'about')}>{t.home.ctaAbout}</a>
+  </div>
+</BaseLayout>
+
+<style>
+  .hero {
+    padding-block: clamp(2.5rem, 7vw, 5rem) clamp(1.5rem, 4vw, 2.5rem);
+  }
+
+  .hero h1 {
+    margin-bottom: 0.35em;
+  }
+
+  .hint {
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    color: var(--ink-faint);
+    margin: 0;
+  }
+
+  .stage {
+    padding-bottom: clamp(1.5rem, 4vw, 2.5rem);
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding-bottom: clamp(2rem, 5vw, 3rem);
+  }
+</style>

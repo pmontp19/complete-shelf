@@ -1,0 +1,178 @@
+[
+  {
+    "id": "1000-receptes-dor",
+    "source": "url",
+    "spineColor": "#352e2b",
+    "textColor": "#faf7f2",
+    "width": 800,
+    "height": 1211
+  },
+  {
+    "id": "amics-amants-i-allo-tan-terrible",
+    "source": "url",
+    "spineColor": "#4e4c4b",
+    "textColor": "#faf7f2",
+    "width": 800,
+    "height": 1229
+  },
+  {
+    "id": "anhel",
+    "source": "url",
+    "spineColor": "#201e1d",
+    "textColor": "#faf7f2",
+    "width": 800,
+    "height": 1209
+  },
+  {
+    "id": "ansia",
+    "source": "url",
+    "spineColor": "#945c43",
+    "textColor": "#faf7f2",
+    "width": 800,
+    "height": 1211
+  },
+  {
+    "id": "campus-drivers-1-sense-frens",
+    "source": "url",
+    "spineColor": "#8e7f9a",
+    "textColor": "#1a1613",
+    "width": 800,
+    "height": 1218
+  },
+  {
+    "id": "campus-drivers-2-novio-perfecte",
+    "source": "url",
+    "spineColor": "#74a58e",
+    "textColor": "#1a1613",
+    "width": 800,
+    "height": 1211
+  },
+  {
+    "id": "deixar-el-mon-enrere",
+    "source": "url",
+    "spineColor": "#1b2623",
+    "textColor": "#faf7f2",
+    "width": 800,
+    "height": 1211
+  },
+  {
+    "id": "el-cel-de-mitjanit",
+    "source": "url",
+    "spineColor": "#596160",
+    "textColor": "#faf7f2",
+    "width": 800,
+    "height": 1161
+  },
+  {
+    "id": "el-passatger-stella-maris",
+    "source": "url",
+    "spineColor": "#4d5669",
+    "textColor": "#faf7f2",
+    "width": 800,
+    "height": 1229
+  },
+  {
+    "id": "els-deu-passos-cap-a-nanette",
+    "source": "url",
+    "spineColor": "#777778",
+    "textColor": "#faf7f2",
+    "width": 800,
+    "height": 1209
+  },
+  {
+    "id": "furia",
+    "source": "url",
+    "spineColor": "#ae6b6a",
+    "textColor": "#1a1613",
+    "width": 800,
+    "height": 1211
+  },
+  {
+    "id": "la-casa-alemanya",
+    "source": "url",
+    "spineColor": "#939385",
+    "textColor": "#1a1613",
+    "width": 800,
+    "height": 1224
+  },
+  {
+    "id": "la-mateixa-sang",
+    "source": "url",
+    "spineColor": "#62493b",
+    "textColor": "#faf7f2",
+    "width": 800,
+    "height": 1221
+  },
+  {
+    "id": "la-serp-i-les-ales-de-la-nit",
+    "source": "url",
+    "spineColor": "#56767f",
+    "textColor": "#faf7f2",
+    "width": 800,
+    "height": 1100
+  },
+  {
+    "id": "lany-de-la-llagosta",
+    "source": "url",
+    "spineColor": "#3c3129",
+    "textColor": "#faf7f2",
+    "width": 800,
+    "height": 1212
+  },
+  {
+    "id": "lapicultor-dalep",
+    "source": "url",
+    "spineColor": "#3f6b63",
+    "textColor": "#faf7f2",
+    "width": 800,
+    "height": 1218
+  },
+  {
+    "id": "les-cendres-i-el-rei-maleit",
+    "source": "url",
+    "spineColor": "#715856",
+    "textColor": "#faf7f2",
+    "width": 800,
+    "height": 1100
+  },
+  {
+    "id": "locell-i-el-cor-de-pedra",
+    "source": "url",
+    "spineColor": "#544238",
+    "textColor": "#faf7f2",
+    "width": 800,
+    "height": 1214
+  },
+  {
+    "id": "lultima-carta",
+    "source": "url",
+    "spineColor": "#839690",
+    "textColor": "#1a1613",
+    "width": 800,
+    "height": 1211
+  },
+  {
+    "id": "mala-gent",
+    "source": "url",
+    "spineColor": "#46484c",
+    "textColor": "#faf7f2",
+    "width": 800,
+    "height": 1214
+  },
+  {
+    "id": "riu-te-de-les-bodes",
+    "source": "url",
+    "spineColor": "#9e947a",
+    "textColor": "#1a1613",
+    "width": 800,
+    "height": 1218
+  },
+  {
+    "id": "un-un-sol-recipient",
+    "source": "url",
+    "spineColor": "#879682",
+    "textColor": "#1a1613",
+    "width": 800,
+    "height": 1076
+  }
+]

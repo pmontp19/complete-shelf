@@ -1,0 +1,303 @@
+---
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import { LOCALES, ROUTES, type Locale } from '~/i18n/config';
+import { bookPath, sectionPath } from '~/i18n/paths';
+import { useTranslations, interpolate } from '~/i18n/ui';
+import {
+  ALL_BOOKS,
+  coverFor,
+  paletteFor,
+  neighbours,
+  synopsisFor,
+  type BookRecord,
+} from '~/data/books';
+
+export function getStaticPaths() {
+  return LOCALES.flatMap((lang) =>
+    ALL_BOOKS.map((book) => ({
+      params: { lang, section: ROUTES[lang].works, book: book.id },
+      props: { book },
+    })),
+  );
+}
+
+const locale = Astro.params.lang as Locale;
+const { book } = Astro.props as { book: BookRecord };
+const t = useTranslations(locale);
+
+const palette = paletteFor(book.id);
+const { previous, next } = neighbours(book.id);
+const synopsis = synopsisFor(book, locale);
+
+const description = interpolate(t.book.metaDescription, {
+  title: book.title,
+  author: book.author,
+  publisher: book.publisher,
+});
+
+const rows: Array<{ label: string; value: string }> = [
+  { label: t.book.originalTitle, value: book.originalTitle },
+  { label: t.book.author, value: book.author },
+  { label: t.book.publisher, value: book.publisher },
+  { label: t.book.year, value: String(book.year) },
+  { label: t.book.from, value: t.languages[book.originalLanguage] },
+  { label: t.book.into, value: t.languages[book.targetLanguage] },
+  { label: t.book.category, value: t.categories[book.category] },
+  ...(book.pageCount ? [{ label: t.book.pages, value: String(book.pageCount) }] : []),
+  { label: t.book.isbn, value: book.isbn },
+  ...(book.coTranslators?.length
+    ? [{ label: t.book.coTranslators, value: book.coTranslators.join(' · ') }]
+    : []),
+];
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'Book',
+  name: book.title,
+  alternateName: book.originalTitle,
+  author: { '@type': 'Person', name: book.author },
+  translator: { '@type': 'Person', name: 'Judith Raigal Aran' },
+  publisher: { '@type': 'Organization', name: book.publisher },
+  datePublished: String(book.year),
+  isbn: book.isbn,
+  inLanguage: book.targetLanguage,
+  numberOfPages: book.pageCount,
+  abstract: synopsis || undefined,
+};
+---
+
+<BaseLayout
+  locale={locale}
+  title={book.title}
+  description={description}
+  page={{ kind: 'book', slug: book.id }}
+  current="works"
+  ogImage={coverFor(book.id)}
+  tint={{ color: palette.spineColor, contrast: palette.textColor }}
+>
+  <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(schema)} />
+
+  <nav class="crumb">
+    <a href={sectionPath(locale, 'works')}>← {t.book.back}</a>
+  </nav>
+
+  <article class="book">
+    <div class="book__cover">
+      <img
+        src={coverFor(book.id)}
+        width="800"
+        height="1200"
+        alt={`${t.book.originalTitle}: ${book.originalTitle}. ${book.title}, ${book.author}`}
+        fetchpriority="high"
+      />
+    </div>
+
+    <div class="book__body">
+      <p class="eyebrow">{book.publisher} · {book.year}</p>
+      <h1>{book.title}</h1>
+      <p class="book__author">{book.author}</p>
+      <p class="book__original">
+        <i>{book.originalTitle}</i> · {t.book.from} {t.languages[book.originalLanguage]}
+      </p>
+
+      {
+        synopsis && (
+          <div class="book__synopsis">
+            <h2 class="visually-hidden">{t.book.synopsis}</h2>
+            <p>{synopsis}</p>
+          </div>
+        )
+      }
+
+      <h2 class="book__details-heading">{t.book.details}</h2>
+      <dl class="book__details">
+        {
+          rows.map((row) => (
+            <div>
+              <dt>{row.label}</dt>
+              <dd>{row.value}</dd>
+            </div>
+          ))
+        }
+      </dl>
+
+      {
+        book.sources.length > 0 && (
+          <details class="book__sources">
+            <summary>{t.book.sources} · {book.sources.length}</summary>
+            <ul>
+              {book.sources.map((href) => (
+                <li>
+                  <a href={href} rel="nofollow noopener" target="_blank">
+                    {new URL(href).hostname.replace(/^www\./, '')}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )
+      }
+    </div>
+  </article>
+
+  <nav class="pager" aria-label={t.works.title}>
+    {
+      previous ? (
+        <a class="pager__link" href={bookPath(locale, previous.id)} rel="prev">
+          <span class="pager__label">← {t.book.previous}</span>
+          <span class="pager__title">{previous.title}</span>
+        </a>
+      ) : (
+        <span />
+      )
+    }
+    {
+      next && (
+        <a class="pager__link pager__link--next" href={bookPath(locale, next.id)} rel="next">
+          <span class="pager__label">{t.book.next} →</span>
+          <span class="pager__title">{next.title}</span>
+        </a>
+      )
+    }
+  </nav>
+</BaseLayout>
+
+<style>
+  .crumb {
+    padding-top: clamp(1.5rem, 4vw, 2.5rem);
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+  }
+
+  .crumb a {
+    text-decoration: none;
+    color: var(--ink-faint);
+  }
+
+  .crumb a:hover {
+    color: var(--ink);
+  }
+
+  .book {
+    display: grid;
+    gap: clamp(2rem, 5vw, 4rem);
+    align-items: start;
+    padding-block: clamp(1.5rem, 4vw, 3rem);
+  }
+
+  @media (min-width: 52rem) {
+    .book {
+      grid-template-columns: minmax(13rem, 22rem) minmax(0, 1.5fr);
+    }
+  }
+
+  .book__cover img {
+    width: 100%;
+    border-radius: 2px;
+    box-shadow: 0 4px 10px rgb(30 26 22 / 0.12), 0 26px 60px
+      color-mix(in srgb, var(--tint) 30%, transparent);
+  }
+
+  .book__body h1 {
+    margin-bottom: 0.15em;
+  }
+
+  .book__author {
+    font-size: 1.15rem;
+    color: var(--ink-soft);
+    margin-bottom: 0.35em;
+  }
+
+  .book__original {
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    color: var(--ink-faint);
+    margin-bottom: 2rem;
+  }
+
+  .book__synopsis p {
+    font-size: 1.06em;
+  }
+
+  .book__details-heading {
+    font-family: var(--font-sans);
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-top: 2.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--rule);
+  }
+
+  .book__details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+    gap: 1rem 2rem;
+    margin: 0;
+  }
+
+  .book__details dt {
+    font-family: var(--font-sans);
+    font-size: 0.66rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  .book__details dd {
+    margin: 0.1rem 0 0;
+    font-size: 0.95rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .book__sources {
+    margin-top: 2rem;
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    color: var(--ink-faint);
+  }
+
+  .book__sources summary {
+    cursor: pointer;
+  }
+
+  .book__sources ul {
+    margin: 0.6rem 0 0;
+    padding-inline-start: 1.1rem;
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .pager {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    padding-block: 2rem 1rem;
+    border-top: 1px solid var(--rule);
+  }
+
+  .pager__link {
+    display: grid;
+    gap: 0.15rem;
+    text-decoration: none;
+  }
+
+  .pager__link--next {
+    text-align: end;
+  }
+
+  .pager__label {
+    font-family: var(--font-sans);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  .pager__title {
+    font-weight: 600;
+    line-height: 1.3;
+  }
+</style>

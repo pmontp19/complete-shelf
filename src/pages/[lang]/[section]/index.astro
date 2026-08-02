@@ -1,0 +1,44 @@
+---
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import WorksPage from '~/components/pages/WorksPage.astro';
+import AboutPage from '~/components/pages/AboutPage.astro';
+import ContactPage from '~/components/pages/ContactPage.astro';
+import { LOCALES, ROUTES, SECTIONS, type Locale, type Section } from '~/i18n/config';
+import { useTranslations } from '~/i18n/ui';
+
+/**
+ * One thin router for the three top-level sections. Keeping them in a single
+ * dynamic route avoids ambiguous sibling routes at this level while still
+ * giving every language its own URL segment.
+ */
+export function getStaticPaths() {
+  return LOCALES.flatMap((lang) =>
+    SECTIONS.map((section) => ({
+      params: { lang, section: ROUTES[lang][section] },
+      props: { section },
+    })),
+  );
+}
+
+const locale = Astro.params.lang as Locale;
+const { section } = Astro.props as { section: Section };
+const t = useTranslations(locale);
+
+const meta: Record<Section, { title: string; description: string }> = {
+  works: { title: t.works.title, description: t.works.metaDescription },
+  about: { title: t.about.title, description: t.about.metaDescription },
+  contact: { title: t.contact.title, description: t.contact.metaDescription },
+};
+---
+
+<BaseLayout
+  locale={locale}
+  title={meta[section].title}
+  description={meta[section].description}
+  page={{ kind: 'section', section }}
+  current={section}
+>
+  {section === 'works' && <WorksPage locale={locale} />}
+  {section === 'about' && <AboutPage locale={locale} />}
+  {section === 'contact' && <ContactPage locale={locale} />}
+</BaseLayout>
