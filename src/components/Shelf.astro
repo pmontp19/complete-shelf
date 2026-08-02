@@ -13,21 +13,24 @@ const t = useTranslations(locale);
 
 const shelfBooks = toShelfBooks(locale, { languages: t.languages });
 
-const panels = ALL_BOOKS.map((book) => ({
+/** Everything the caption needs, so the panel is one node the shelf rewrites. */
+const captions = ALL_BOOKS.map((book) => ({
   id: book.id,
   title: book.title,
   originalTitle: book.originalTitle,
   author: book.author,
-  publisher: book.publisher,
-  year: book.year,
-  sourceLanguage: t.languages[book.originalLanguage],
-  targetLanguage: t.languages[book.targetLanguage],
+  imprint: `${book.publisher} · ${book.year}`,
+  pair: `${t.languages[book.originalLanguage]} → ${t.languages[book.targetLanguage]}`,
   href: bookPath(locale, book.id),
   palette: paletteFor(book.id),
 }));
 
+const first = captions[0];
+const total = captions.length;
+
 const payload = {
   books: shelfBooks,
+  captions,
   labels: {
     region: t.shelf.region,
     previous: t.shelf.previous,
@@ -38,50 +41,89 @@ const payload = {
     webglUnsupported: t.shelf.webglUnsupported,
   },
 };
+
+const pad = (value: number) => String(value).padStart(2, '0');
 ---
 
 <section class="shelf" data-shelf-root>
   <div class="shelf__stage">
-    <div class="shelf__canvas" data-shelf-canvas>
-      <p class="shelf__loading" data-shelf-loading>{t.shelf.loading}</p>
-    </div>
+    <div class="shelf__canvas" data-shelf-canvas></div>
+    <p class="shelf__loading" data-shelf-loading>{t.shelf.loading}</p>
   </div>
 
-  <aside class="shelf__panel" aria-live="polite" aria-atomic="true">
-    <p class="eyebrow">{t.home.selectedHeading}</p>
-    {
-      panels.map((book, index) => (
+  {/* The instrument panel: a hairline rule carrying the position of the
+      carriage, its two controls, and the running count. */}
+  <div class="shelf__rail shell">
+    <button class="stepper" type="button" data-shelf-prev aria-label={t.shelf.previous}>
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M15 4 7 12l8 8" fill="none" stroke="currentColor" stroke-width="1.4" />
+      </svg>
+    </button>
+
+    <div class="shelf__track" aria-hidden="true">
+      <span class="shelf__thumb" data-shelf-thumb></span>
+    </div>
+
+    <p class="shelf__counter" aria-hidden="true">
+      <span class="shelf__counter-now" data-shelf-position>{pad(1)}</span>
+      <span class="shelf__counter-rule"></span>
+      <span class="shelf__counter-total">{pad(total)}</span>
+    </p>
+
+    <button class="stepper" type="button" data-shelf-next aria-label={t.shelf.next}>
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M9 4l8 8-8 8" fill="none" stroke="currentColor" stroke-width="1.4" />
+      </svg>
+    </button>
+  </div>
+
+  {/* Museum label. One node, rewritten as the carriage moves — the shelf's own
+      live region does the announcing, so this stays visual. */}
+  {
+    first && (
+      <div class="shell">
         <article
-          class="detail"
-          data-shelf-detail={book.id}
-          hidden={index !== 0}
-          style={`--tint:${book.palette.spineColor};--tint-contrast:${book.palette.textColor};`}
+          class="caption"
+          data-shelf-caption
+          style={`--tint:${first.palette.spineColor};--tint-contrast:${first.palette.textColor};`}
         >
-          <h2 class="detail__title">{book.title}</h2>
-          <p class="detail__author">{book.author}</p>
-          <dl class="detail__meta">
+          <div class="caption__lede">
+            <p class="eyebrow">{t.home.selectedHeading}</p>
+            <h2 class="caption__title" data-caption-title>{first.title}</h2>
+            <p class="caption__author" data-caption-author>{first.author}</p>
+          </div>
+
+          <dl class="caption__meta">
             <div>
               <dt>{t.book.originalTitle}</dt>
-              <dd><i>{book.originalTitle}</i></dd>
+              <dd><i data-caption-original>{first.originalTitle}</i></dd>
             </div>
             <div>
               <dt>{t.book.publisher}</dt>
-              <dd>{book.publisher}, {book.year}</dd>
+              <dd data-caption-imprint>{first.imprint}</dd>
             </div>
             <div>
               <dt>{t.book.from}</dt>
-              <dd>{book.sourceLanguage} → {book.targetLanguage}</dd>
+              <dd data-caption-pair>{first.pair}</dd>
             </div>
           </dl>
-          <a class="button" href={book.href}>{t.shelf.open}</a>
+
+          <p class="caption__action">
+            <a class="button" href={first.href} data-caption-href>
+              {t.shelf.open}
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" class="button__arrow">
+                <path d="M5 12h13m-5-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.5" />
+              </svg>
+            </a>
+          </p>
         </article>
-      ))
-    }
-  </aside>
+      </div>
+    )
+  }
 
   {/* Progressive enhancement: this list is the page until (and unless) the
       WebGL shelf mounts successfully. */}
-  <div class="shelf__fallback" data-shelf-fallback>
+  <div class="shelf__fallback shell" data-shelf-fallback>
     <h2 class="visually-hidden">{t.shelf.listFallback}</h2>
     <ul class="fallback-grid">
       {
@@ -113,75 +155,159 @@ const payload = {
   import { mountShelf } from '~/lib/shelf/shelf';
   import type { ShelfOptions } from '~/lib/shelf/types';
 
+  interface Caption {
+    id: string;
+    title: string;
+    originalTitle: string;
+    author: string;
+    imprint: string;
+    pair: string;
+    href: string;
+    palette: { spineColor: string; textColor: string };
+  }
+
   const root = document.querySelector<HTMLElement>('[data-shelf-root]');
   const canvas = root?.querySelector<HTMLElement>('[data-shelf-canvas]');
   const payloadEl = root?.querySelector<HTMLScriptElement>('[data-shelf-payload]');
 
   if (root && canvas && payloadEl?.textContent) {
-    const payload = JSON.parse(payloadEl.textContent) as Pick<ShelfOptions, 'books' | 'labels'>;
-    const details = new Map<string, HTMLElement>();
-    for (const el of root.querySelectorAll<HTMLElement>('[data-shelf-detail]')) {
-      details.set(el.dataset.shelfDetail!, el);
-    }
+    const payload = JSON.parse(payloadEl.textContent) as Pick<ShelfOptions, 'books' | 'labels'> & {
+      captions: Caption[];
+    };
 
-    const showDetail = (id: string) => {
-      for (const [key, el] of details) el.hidden = key !== id;
+    const pick = <T extends HTMLElement>(selector: string) => root.querySelector<T>(selector);
+    const caption = pick<HTMLElement>('[data-shelf-caption]');
+    const titleEl = pick<HTMLElement>('[data-caption-title]');
+    const authorEl = pick<HTMLElement>('[data-caption-author]');
+    const originalEl = pick<HTMLElement>('[data-caption-original]');
+    const imprintEl = pick<HTMLElement>('[data-caption-imprint]');
+    const pairEl = pick<HTMLElement>('[data-caption-pair]');
+    const linkEl = pick<HTMLAnchorElement>('[data-caption-href]');
+    const positionEl = pick<HTMLElement>('[data-shelf-position]');
+    const thumbEl = pick<HTMLElement>('[data-shelf-thumb]');
+    const loadingEl = pick<HTMLElement>('[data-shelf-loading]');
+    const previousButton = pick<HTMLButtonElement>('[data-shelf-prev]');
+    const nextButton = pick<HTMLButtonElement>('[data-shelf-next]');
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const pad = (value: number) => String(value).padStart(2, '0');
+
+    let shown = -1;
+    const showCaption = (index: number) => {
+      const entry = payload.captions[index];
+      if (!entry || index === shown) return;
+      const first = shown === -1;
+      shown = index;
+
+      if (titleEl) titleEl.textContent = entry.title;
+      if (authorEl) authorEl.textContent = entry.author;
+      if (originalEl) originalEl.textContent = entry.originalTitle;
+      if (imprintEl) imprintEl.textContent = entry.imprint;
+      if (pairEl) pairEl.textContent = entry.pair;
+      if (linkEl) linkEl.href = entry.href;
+      if (positionEl) positionEl.textContent = pad(index + 1);
+      caption?.style.setProperty('--tint', entry.palette.spineColor);
+      caption?.style.setProperty('--tint-contrast', entry.palette.textColor);
+      root.style.setProperty('--tint', entry.palette.spineColor);
+
+      // A label being replaced, not a page repainting: the new text rises into
+      // place. Skipped on first paint (nothing changed yet) and when the
+      // reader has asked for less movement.
+      if (caption && !first && !reduced.matches) {
+        caption.getAnimations().forEach((animation) => animation.cancel());
+        caption.animate(
+          [
+            { opacity: 0, transform: 'translateY(8px)' },
+            { opacity: 1, transform: 'none' },
+          ],
+          { duration: 420, easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)' },
+        );
+      }
     };
 
     mountShelf(canvas, {
-      ...payload,
-      onSelect(book) {
-        showDetail(book.id);
-        root.style.setProperty('--tint', book.spineColor);
+      books: payload.books,
+      labels: payload.labels,
+      onSelect(_book, index) {
+        showCaption(index);
+      },
+      onProgress(position, total) {
+        if (!thumbEl || total === 0) return;
+        // The run loops, so the thumb loops with it: position on the rail is
+        // where the carriage sits within one pass of the collection.
+        const laps = ((position % total) + total) % total;
+        thumbEl.style.setProperty('--at', String(laps / total));
+      },
+      onReady() {
+        root.dataset.ready = 'true';
       },
       onActivate(book) {
         window.location.href = book.href;
       },
     })
-      .then(() => {
+      .then((shelf) => {
         root.dataset.mounted = 'true';
-        root.querySelector<HTMLElement>('[data-shelf-loading]')?.remove();
+        loadingEl?.remove();
+        previousButton?.addEventListener('click', () => shelf.previous());
+        nextButton?.addEventListener('click', () => shelf.next());
       })
       .catch((error) => {
         // Leave the HTML fallback in place; it is a complete experience.
         console.error('[shelf] mount failed, keeping the static catalogue', error);
-        root.querySelector<HTMLElement>('[data-shelf-loading]')?.remove();
+        loadingEl?.remove();
       });
   }
 </script>
 
 <style>
   .shelf {
-    display: grid;
-    gap: clamp(1.5rem, 4vw, 3rem);
-    grid-template-columns: 1fr;
-    align-items: center;
+    --stage-height: clamp(21rem, 56vh, 38rem);
+    display: block;
   }
 
-  @media (min-width: 62rem) {
+  /* On a phone the caption has to share the fold with the shelf, and a squarer
+     stage also frames more volumes than a letterbox one would. */
+  @media (max-width: 48rem) {
     .shelf {
-      grid-template-columns: minmax(0, 1.9fr) minmax(17rem, 0.9fr);
+      --stage-height: clamp(16rem, 44vh, 23rem);
     }
   }
 
+  /* --- stage --------------------------------------------------------------- */
+
   .shelf__stage {
-    min-width: 0;
+    position: relative;
+    width: 100%;
+    height: var(--stage-height);
+    overflow: hidden;
+    /* The canvas is drawn transparent, so this wash *is* the room the books
+       stand in: paper at the top, the selected cover's colour pooling under
+       the ledge. It cross-fades on every selection. */
+    background:
+      radial-gradient(
+        120% 76% at 50% 92%,
+        color-mix(in srgb, var(--tint) 22%, transparent),
+        transparent 66%
+      ),
+      linear-gradient(
+        180deg,
+        var(--paper) 8%,
+        color-mix(in srgb, var(--tint) 7%, var(--paper)) 58%,
+        var(--paper) 100%
+      );
+    transition: background 700ms var(--ease);
   }
 
   .shelf__canvas {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 16 / 10;
-    min-height: 20rem;
-    max-height: min(72vh, 40rem);
-    border-radius: calc(var(--radius) * 2);
-    overflow: hidden;
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--tint) 8%, var(--paper)),
-      var(--paper-sunk)
-    );
-    transition: background 600ms var(--ease);
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 900ms var(--ease);
+  }
+
+  /* Covers are in; bring the shelf up like a print coming out of the tray. */
+  .shelf[data-ready='true'] .shelf__canvas {
+    opacity: 1;
   }
 
   .shelf__canvas :global(canvas) {
@@ -197,71 +323,185 @@ const payload = {
     place-content: center;
     margin: 0;
     font-family: var(--font-sans);
-    font-size: 0.85rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
     color: var(--ink-faint);
   }
 
   /* The 3D shelf and the static grid are mutually exclusive. */
-  .shelf__panel {
+  .shelf:not([data-mounted='true']) .shelf__stage,
+  .shelf:not([data-mounted='true']) .shelf__rail,
+  .shelf:not([data-mounted='true']) .caption {
     display: none;
-  }
-
-  .shelf[data-mounted='true'] .shelf__panel {
-    display: block;
   }
 
   .shelf[data-mounted='true'] .shelf__fallback {
     display: none;
   }
 
-  .shelf:not([data-mounted='true']) .shelf__stage {
-    display: none;
+  /* --- rail ---------------------------------------------------------------- */
+
+  .shelf__rail {
+    display: flex;
+    align-items: center;
+    gap: clamp(0.75rem, 2vw, 1.5rem);
+    padding-block: 0.85rem;
+    border-block: 1px solid var(--rule);
   }
 
-  .shelf__fallback {
-    grid-column: 1 / -1;
-  }
-
-  .detail__title {
-    font-size: clamp(1.35rem, 1.1rem + 1vw, 1.85rem);
-    margin-bottom: 0.15em;
-  }
-
-  .detail__author {
-    font-family: var(--font-sans);
-    font-size: 0.85rem;
-    letter-spacing: 0.04em;
-    color: var(--ink-faint);
-    margin-bottom: 1.4em;
-  }
-
-  .detail__meta {
+  .stepper {
+    flex: none;
     display: grid;
-    gap: 0.75rem;
-    margin: 0 0 1.75rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--rule);
+    place-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: color 180ms var(--ease), border-color 180ms var(--ease),
+      background 180ms var(--ease);
   }
 
-  .detail__meta dt {
+  .stepper svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .stepper:hover {
+    color: var(--ink);
+    border-color: var(--ink-faint);
+    background: var(--paper-raised);
+  }
+
+  .stepper:active {
+    background: var(--paper-sunk);
+  }
+
+  .shelf__track {
+    position: relative;
+    flex: 1 1 auto;
+    height: 1px;
+    background: var(--rule);
+  }
+
+  /* Not a scrollbar — a hairline index mark travelling the length of the run. */
+  .shelf__thumb {
+    --at: 0;
+    position: absolute;
+    top: 50%;
+    left: calc(var(--at) * 100%);
+    width: clamp(2.5rem, 8%, 5rem);
+    height: 2px;
+    margin-top: -1px;
+    background: var(--tint, var(--accent));
+    transform-origin: left center;
+    transition: left 120ms linear;
+  }
+
+  .shelf__counter {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0;
     font-family: var(--font-sans);
     font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.12em;
+    color: var(--ink-faint);
+  }
+
+  .shelf__counter-now {
+    color: var(--ink);
+  }
+
+  .shelf__counter-rule {
+    width: 0.85rem;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.6;
+  }
+
+  /* --- caption ------------------------------------------------------------- */
+
+  .caption {
+    display: grid;
+    gap: clamp(1.25rem, 3vw, 2.5rem);
+    align-items: start;
+    padding-block: clamp(1.5rem, 3.5vw, 2.25rem);
+  }
+
+  @media (min-width: 56rem) {
+    .caption {
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.35fr) auto;
+    }
+  }
+
+  .caption__lede {
+    min-width: 0;
+  }
+
+  .caption__title {
+    font-size: clamp(1.5rem, 1.1rem + 1.5vw, 2.35rem);
+    margin-bottom: 0.12em;
+    text-wrap: balance;
+  }
+
+  .caption__author {
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    letter-spacing: 0.03em;
+    color: var(--ink-faint);
+    margin: 0;
+  }
+
+  .caption__meta {
+    display: grid;
+    gap: 0.85rem 2rem;
+    margin: 0;
+    align-content: start;
+  }
+
+  @media (min-width: 34rem) {
+    .caption__meta {
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+    }
+  }
+
+  .caption__meta dt {
+    font-family: var(--font-sans);
+    font-size: 0.68rem;
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--ink-faint);
-    margin-bottom: 0.15rem;
+    margin-bottom: 0.2rem;
   }
 
-  .detail__meta dd {
+  .caption__meta dd {
     margin: 0;
     font-size: 0.95rem;
+    line-height: 1.45;
+  }
+
+  .caption__action {
+    margin: 0;
   }
 
   /* The cover pipeline already picked a WCAG-checked foreground for each
      spine colour; use it instead of assuming every cover is dark. */
-  .detail .button {
+  .caption .button {
     --button-bg: var(--tint);
     --button-fg: var(--tint-contrast);
+  }
+
+  /* --- static fallback ----------------------------------------------------- */
+
+  .shelf__fallback {
+    padding-block: clamp(1.5rem, 4vw, 2.5rem);
   }
 
   .fallback-grid {

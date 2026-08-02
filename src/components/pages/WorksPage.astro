@@ -57,12 +57,13 @@ const countLabel = count === 1 ? t.works.countOne : interpolate(t.works.count, {
 
 <ul class="catalogue" data-catalogue>
   {
-    ALL_BOOKS.map((book) => (
+    ALL_BOOKS.map((book, index) => (
       <li
         class="card"
         data-language={book.originalLanguage}
         data-category={book.category}
-        style={`--tint:${paletteFor(book.id).spineColor};`}
+        data-reveal
+        style={`--tint:${paletteFor(book.id).spineColor};--reveal-delay:${Math.min(index, 5) * 40}ms;`}
       >
         <a href={bookPath(locale, book.id)}>
           <span class="card__cover">
@@ -76,11 +77,16 @@ const countLabel = count === 1 ? t.works.countOne : interpolate(t.works.count, {
             />
           </span>
           <span class="card__body">
+            {/* Catalogue numbers run over the whole bibliography, not over
+                whatever the filters have left standing — they are the volume's
+                number, not its position in the current view. */}
+            <span class="card__index">
+              <span class="card__no">{String(index + 1).padStart(2, '0')}</span>
+              <span class="card__year">{book.year}</span>
+            </span>
             <span class="card__title">{book.title}</span>
             <span class="card__author">{book.author}</span>
-            <span class="card__meta">
-              {book.publisher} · {book.year}
-            </span>
+            <span class="card__meta">{book.publisher}</span>
           </span>
         </a>
       </li>
@@ -208,25 +214,57 @@ const countLabel = count === 1 ? t.works.countOne : interpolate(t.works.count, {
     height: 100%;
   }
 
+  /* The cover is a physical object on the page: it stands slightly proud, and
+     the shadow it throws carries its own dominant colour. */
+  .card__cover {
+    display: block;
+    perspective: 900px;
+  }
+
   .card__cover img {
     width: 100%;
     aspect-ratio: 2 / 3;
     object-fit: cover;
     border-radius: 2px;
     box-shadow: var(--shadow-md);
-    transition: transform 240ms var(--ease), box-shadow 240ms var(--ease);
+    transition: transform 320ms var(--ease-out), box-shadow 320ms var(--ease-out);
   }
 
-  .card a:hover .card__cover img {
-    transform: translateY(-4px);
-    box-shadow: 0 6px 14px rgb(30 26 22 / 0.12), 0 22px 48px
-      color-mix(in srgb, var(--tint) 28%, transparent);
+  .card a:hover .card__cover img,
+  .card a:focus-visible .card__cover img {
+    transform: translateY(-6px) rotateX(3deg) scale(1.012);
+    box-shadow: 0 8px 18px rgb(30 26 22 / 0.13), 0 26px 56px
+      color-mix(in srgb, var(--tint) 34%, transparent);
   }
 
   .card__body {
     display: grid;
     gap: 0.1rem;
     align-content: start;
+  }
+
+  .card__index {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding-bottom: 0.4rem;
+    margin-bottom: 0.45rem;
+    border-bottom: 1px solid var(--rule);
+    font-family: var(--font-sans);
+    font-size: 0.66rem;
+    letter-spacing: 0.14em;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-faint);
+    transition: border-color 240ms var(--ease);
+  }
+
+  .card a:hover .card__index {
+    border-bottom-color: var(--tint);
+  }
+
+  .card__no {
+    color: var(--ink);
   }
 
   .card__title {

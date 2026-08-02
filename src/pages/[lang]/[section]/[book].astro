@@ -27,6 +27,10 @@ const { book } = Astro.props as { book: BookRecord };
 const t = useTranslations(locale);
 
 const palette = paletteFor(book.id);
+const catalogueNumber = String(ALL_BOOKS.findIndex((entry) => entry.id === book.id) + 1).padStart(
+  2,
+  '0',
+);
 const cover = dimensionsFor(book.id);
 const { previous, next } = neighbours(book.id);
 const synopsis = synopsisFor(book, locale);
@@ -81,10 +85,16 @@ const schema = {
   ></script>
 
   <nav class="crumb">
-    <a href={sectionPath(locale, 'works')}>← {t.book.back}</a>
+    <a class="link-arrow crumb__link" href={sectionPath(locale, 'works')}>
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" class="crumb__arrow">
+        <path d="M19 12H6m5-6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.5" />
+      </svg>
+      {t.book.back}
+    </a>
+    <span class="crumb__no" aria-hidden="true">{catalogueNumber} / {ALL_BOOKS.length}</span>
   </nav>
 
-  <article class="book">
+  <article class="book" data-reveal>
     <div class="book__cover">
       <img
         src={coverFor(book.id)}
@@ -172,20 +182,33 @@ const schema = {
 
 <style>
   .crumb {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
     padding-top: clamp(1.5rem, 4vw, 2.5rem);
-    font-family: var(--font-sans);
-    font-size: 0.82rem;
   }
 
-  .crumb a {
-    display: inline-block;
-    padding-block: 0.35rem;
-    text-decoration: none;
+  .crumb__link {
     color: var(--ink-faint);
+    border-bottom-color: transparent;
   }
 
-  .crumb a:hover {
+  .crumb__link:hover {
     color: var(--ink);
+  }
+
+  /* The arrow points back, so it should walk back on hover. */
+  .crumb__link:hover .crumb__arrow {
+    transform: translateX(-0.2em);
+  }
+
+  .crumb__no {
+    font-family: var(--font-sans);
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-faint);
   }
 
   .book {
@@ -199,6 +222,19 @@ const schema = {
     .book {
       grid-template-columns: minmax(13rem, 22rem) minmax(0, 1.5fr);
     }
+  }
+
+  .book__cover {
+    position: relative;
+    padding: clamp(1.25rem, 3vw, 2.25rem);
+    background:
+      radial-gradient(
+        120% 90% at 50% 100%,
+        color-mix(in srgb, var(--tint) 16%, transparent),
+        transparent 70%
+      ),
+      var(--paper-sunk);
+    border-radius: var(--radius);
   }
 
   .book__cover img {
@@ -295,6 +331,12 @@ const schema = {
     display: grid;
     gap: 0.15rem;
     text-decoration: none;
+    padding: 1rem 0;
+    transition: color 200ms var(--ease);
+  }
+
+  .pager__link:hover {
+    color: var(--tint);
   }
 
   .pager__link--next {

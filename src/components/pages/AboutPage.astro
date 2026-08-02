@@ -23,7 +23,7 @@ const span = years.length > 0 ? `${Math.min(...years)}–${Math.max(...years)}` 
   <p class="lead">{t.about.lead}</p>
 </div>
 
-<div class="about">
+<div class="about" data-reveal>
   <div class="about__prose">
     {paragraphs.map((paragraph) => <p>{paragraph}</p>)}
 
@@ -170,11 +170,19 @@ const span = years.length > 0 ? `${Math.min(...years)}–${Math.max(...years)}` 
     gap: 1.35rem;
   }
 
+
   .research li {
     display: grid;
     grid-template-columns: 3.2rem minmax(0, 1fr);
     gap: 0 0.75rem;
     align-items: baseline;
+    padding-top: 1.35rem;
+    border-top: 1px solid var(--rule);
+  }
+
+  .research li:first-child {
+    padding-top: 0;
+    border-top: 0;
   }
 
   .research__year {

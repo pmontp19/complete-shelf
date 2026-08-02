@@ -17,7 +17,7 @@ const t = useTranslations(locale);
   <p class="lead">{t.contact.lead}</p>
 </div>
 
-<div class="contact">
+<div class="contact" data-reveal>
   {
     PROFILE.email && (
       <p class="contact__primary">
@@ -67,8 +67,22 @@ const t = useTranslations(locale);
 <style>
   .contact {
     display: grid;
-    gap: 2.5rem;
+    gap: 2.25rem;
     padding-block: 1rem 3rem;
+  }
+
+  .contact__primary,
+  .contact__block,
+  .contact__links {
+    padding-top: 1.35rem;
+    border-top: 1px solid var(--rule);
+  }
+
+  /* `p` is capped at the reading measure globally; here the element carries a
+     rule, and a rule that stops two thirds of the way across looks like a bug. */
+  .contact__primary {
+    margin: 0;
+    max-width: none;
   }
 
   .contact__label {

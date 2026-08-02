@@ -10,10 +10,16 @@ languages, no backend and no third-party requests at runtime.
 
 ## What is here
 
-- **A WebGL shelf** of 22 hardcovers on the home page. Browse with the wheel, the arrow keys, the
-  previous/next buttons or by clicking a spine; the centred volume turns to face you and the page
-  tints to its cover palette. Clicking it opens the book's record. There is no page-turning: this is
-  a bibliography, not a reader.
+- **A WebGL shelf** of 22 hardcovers on the home page, full-bleed and looping: the run has no ends,
+  so it always reads as continuing past both edges of the frame. Drag it, flick it (the carriage
+  carries on and settles onto a volume), swipe sideways on a trackpad, use the arrow keys, the two
+  steppers, or click a spine to bring it to the centre. Hovering a spine tips it out of the run. The
+  centred volume turns to face you and the whole page — the wash behind the stage, the lighting in
+  the scene, the caption's rule and button — tints to its cover palette. Clicking it opens the
+  book's record. There is no page-turning: this is a bibliography, not a reader.
+
+  Vertical scrolling always belongs to the page. A looping shelf has no end to escape past, so
+  swallowing the wheel would strand the reader on it.
 - **Five languages** — Catalan (default), Spanish, English, German and French — with localised URL
   segments (`/ca/traduccions/`, `/de/uebersetzungen/`, …), `hreflang` alternates on every page, and a
   language switcher that keeps you on the page you were reading.

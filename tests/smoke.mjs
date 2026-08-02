@@ -31,13 +31,9 @@ const browser = await chromium.launch({
   args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--no-sandbox'],
 });
 
-/** Selected book ids, read from the server-rendered detail panels. */
+/** The volume the caption is currently describing, by title. */
 const selection = (page) =>
-  page.evaluate(() =>
-    [...document.querySelectorAll('[data-shelf-detail]')]
-      .filter((el) => !el.hidden)
-      .map((el) => el.dataset.shelfDetail),
-  );
+  page.evaluate(() => document.querySelector('[data-caption-title]')?.textContent?.trim() ?? null);
 
 // ---------------------------------------------------------------- shelf ----
 console.log('\n# shelf (ca)');
@@ -67,12 +63,12 @@ console.log('\n# shelf (ca)');
   await page.screenshot({ path: `${SHOTS}shelf-desktop.png` });
 
   // Each input method must move the selection.
-  const start = (await selection(page))[0];
-  if (!start) fail('no detail panel visible on load');
+  const start = await selection(page);
+  if (!start) fail('no caption rendered on load');
 
   await page.getByRole('button', { name: /següent/i }).click();
   await page.waitForTimeout(1200);
-  const afterButton = (await selection(page))[0];
+  const afterButton = await selection(page);
   if (afterButton === start) fail(`next button did not change selection (stuck on ${start})`);
   else ok(`next button: ${start} -> ${afterButton}`);
 
@@ -80,19 +76,35 @@ console.log('\n# shelf (ca)');
   await page.locator('[data-shelf-canvas]').click({ position: { x: 80, y: 120 } });
   await page.keyboard.press('ArrowRight');
   await page.waitForTimeout(1200);
-  const afterKey = (await selection(page))[0];
+  const afterKey = await selection(page);
   if (afterKey === afterButton) fail(`ArrowRight did not change selection (stuck on ${afterButton})`);
   else ok(`ArrowRight: ${afterButton} -> ${afterKey}`);
 
-  await page.mouse.move(500, 700);
-  await page.mouse.wheel(0, 400);
+  // Sideways trackpad swipes scrub the shelf; plain vertical scrolling must
+  // stay with the page, so this is deltaX, not deltaY.
+  const stageBox = await page.locator('.shelf__stage').boundingBox();
+  await page.mouse.move(stageBox.x + stageBox.width / 2, stageBox.y + stageBox.height * 0.55);
+  await page.mouse.wheel(400, 0);
   await page.waitForTimeout(1200);
-  const afterWheel = (await selection(page))[0];
-  if (afterWheel === afterKey) fail(`wheel did not change selection (stuck on ${afterKey})`);
-  else ok(`wheel: ${afterKey} -> ${afterWheel}`);
+  const afterWheel = await selection(page);
+  if (afterWheel === afterKey) fail(`lateral wheel did not change selection (stuck on ${afterKey})`);
+  else ok(`lateral wheel: ${afterKey} -> ${afterWheel}`);
 
-  const visible = (await selection(page)).length;
-  if (visible !== 1) fail(`expected exactly 1 visible detail panel, saw ${visible}`);
+  // ...and the page must still scroll when the pointer is over the shelf.
+  const beforeScroll = await page.evaluate(() => window.scrollY);
+  await page.mouse.wheel(0, 320);
+  await page.waitForTimeout(400);
+  const afterScroll = await page.evaluate(() => window.scrollY);
+  if (afterScroll <= beforeScroll) fail('vertical wheel over the shelf did not scroll the page');
+  else ok(`vertical wheel scrolls the page (${beforeScroll} -> ${afterScroll})`);
+
+  const captions = await page.locator('[data-shelf-caption]').count();
+  if (captions !== 1) fail(`expected exactly 1 caption, saw ${captions}`);
+
+  // The rail must agree with the caption about where the carriage is.
+  const counter = await page.locator('[data-shelf-position]').textContent();
+  if (!/^\d{2}$/.test(counter?.trim() ?? '')) fail(`counter did not render a position: "${counter}"`);
+  else ok(`counter reads ${counter.trim()}`);
 
   if (consoleIssues.length) fail(`console noise on /ca/:\n    ${consoleIssues.join('\n    ')}`);
   else ok('console clean');

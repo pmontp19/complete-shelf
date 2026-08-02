@@ -45,12 +45,17 @@ export class Tween {
     this.ease = ease;
   }
 
-  /** Snapshot the current value and begin easing towards `target`. */
-  retarget(target: number, now: number, duration?: number): void {
+  /**
+   * Snapshot the current value and begin easing towards `target`. An `ease`
+   * may be supplied per leg: a step taken with a key wants a symmetric curve,
+   * while a carriage let go of mid-throw wants to decelerate only.
+   */
+  retarget(target: number, now: number, duration?: number, ease?: EaseFn): void {
     this.fromValue = this.valueAt(now);
     this.toValue = target;
     this.startTime = now;
     if (duration !== undefined) this.duration = Math.max(1, duration);
+    if (ease !== undefined) this.ease = ease;
   }
 
   /** Jump immediately to `target` with no animation (used for reduced motion). */

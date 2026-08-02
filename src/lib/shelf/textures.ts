@@ -54,7 +54,10 @@ export function createSpineTexture(book: ShelfBook, width = 256, height = 1024):
   const ctx = canvas.getContext('2d');
   if (!ctx) return finalizeCanvasTexture(new THREE.CanvasTexture(canvas));
 
-  ctx.fillStyle = book.spineColor;
+  // Dominant cover colours are often near-black, and a wall of them renders as
+  // a row of dead bricks. Lifting the ground a few percent towards the spine's
+  // own foreground keeps very dark cloth reading as cloth.
+  ctx.fillStyle = mixHexColor(book.spineColor, book.textColor, 0.07);
   ctx.fillRect(0, 0, width, height);
 
   // Faint cloth-like vertical grain so the spine isn't a dead flat swatch.
@@ -69,6 +72,16 @@ export function createSpineTexture(book: ShelfBook, width = 256, height = 1024):
     ctx.stroke();
   }
   ctx.globalAlpha = 1;
+
+  // A shallow curve of light down the spine — real cloth over boards is never
+  // evenly lit, and this is what stops a rack of them looking like a barcode.
+  const round = ctx.createLinearGradient(0, 0, width, 0);
+  round.addColorStop(0, 'rgba(0,0,0,0.3)');
+  round.addColorStop(0.32, 'rgba(255,255,255,0.09)');
+  round.addColorStop(0.72, 'rgba(255,255,255,0.03)');
+  round.addColorStop(1, 'rgba(0,0,0,0.26)');
+  ctx.fillStyle = round;
+  ctx.fillRect(0, 0, width, height);
 
   // Head/tail rules, editorial not decorative.
   ctx.strokeStyle = book.textColor;
@@ -149,7 +162,13 @@ function drawTracked(ctx: CanvasRenderingContext2D, text: string, x: number, y: 
   });
 }
 
-/** Procedural walnut-toned wood grain for the shelf board — no external assets. */
+/**
+ * Procedural grain for the ledge — no external assets. Deliberately drawn
+ * near-white: it is a luminance detail map, and the material's own colour
+ * (set per theme) decides whether the ledge reads as pale oak on paper or as
+ * a dark walnut edge at night. Baking a walnut brown in here instead would
+ * multiply down to mud in both.
+ */
 export function createWoodGrainTexture(width = 1024, height = 256, seed = 0xb00c): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -159,9 +178,9 @@ export function createWoodGrainTexture(width = 1024, height = 256, seed = 0xb00c
 
   const random = seededRandom(seed);
   const base = ctx.createLinearGradient(0, 0, 0, height);
-  base.addColorStop(0, '#5b4128');
-  base.addColorStop(0.5, '#6b4c2e');
-  base.addColorStop(1, '#523c24');
+  base.addColorStop(0, '#efe7dc');
+  base.addColorStop(0.5, '#fbf6ee');
+  base.addColorStop(1, '#e6dccf');
   ctx.fillStyle = base;
   ctx.fillRect(0, 0, width, height);
 
@@ -172,9 +191,8 @@ export function createWoodGrainTexture(width = 1024, height = 256, seed = 0xb00c
     const amp = 2 + random() * 8;
     const freq = 0.004 + random() * 0.01;
     const phase = random() * Math.PI * 2;
-    const shade = Math.round(30 + random() * 60);
     const warmth = random() > 0.5 ? 1 : -1;
-    ctx.strokeStyle = `rgba(${shade + 30},${shade + 12},${Math.max(0, shade - 8)},${0.08 + random() * 0.16})`;
+    ctx.strokeStyle = `rgba(126,102,74,${0.04 + random() * 0.08})`;
     ctx.lineWidth = 0.6 + random() * 1.6;
     ctx.beginPath();
     for (let x = 0; x <= width; x += 8) {
@@ -192,9 +210,9 @@ export function createWoodGrainTexture(width = 1024, height = 256, seed = 0xb00c
     const ky = height * (0.2 + random() * 0.6);
     const radius = 6 + random() * 10;
     const knot = ctx.createRadialGradient(kx, ky, 0, kx, ky, radius * 2.4);
-    knot.addColorStop(0, 'rgba(30,18,10,0.55)');
-    knot.addColorStop(0.5, 'rgba(40,24,14,0.22)');
-    knot.addColorStop(1, 'rgba(40,24,14,0)');
+    knot.addColorStop(0, 'rgba(120,94,64,0.24)');
+    knot.addColorStop(0.5, 'rgba(120,94,64,0.1)');
+    knot.addColorStop(1, 'rgba(120,94,64,0)');
     ctx.fillStyle = knot;
     ctx.beginPath();
     ctx.ellipse(kx, ky, radius * 2.4, radius, 0, 0, Math.PI * 2);
@@ -203,10 +221,10 @@ export function createWoodGrainTexture(width = 1024, height = 256, seed = 0xb00c
 
   // Subtle overall vignette so tiled repeats read as one continuous board.
   const vignette = ctx.createLinearGradient(0, 0, 0, height);
-  vignette.addColorStop(0, 'rgba(0,0,0,0.18)');
-  vignette.addColorStop(0.15, 'rgba(0,0,0,0)');
-  vignette.addColorStop(0.85, 'rgba(0,0,0,0)');
-  vignette.addColorStop(1, 'rgba(0,0,0,0.22)');
+  vignette.addColorStop(0, 'rgba(70,54,36,0.12)');
+  vignette.addColorStop(0.15, 'rgba(70,54,36,0)');
+  vignette.addColorStop(0.85, 'rgba(70,54,36,0)');
+  vignette.addColorStop(1, 'rgba(70,54,36,0.16)');
   ctx.fillStyle = vignette;
   ctx.fillRect(0, 0, width, height);
 
