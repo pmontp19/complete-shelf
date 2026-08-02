@@ -81,6 +81,10 @@ export interface Dictionary {
     lead: string;
     email: string;
     elsewhere: string;
+    /** Heading over the list of areas she works in. */
+    fields: string;
+    /** Heading over the working-language pair. */
+    languages: string;
     metaDescription: string;
   };
   footer: { rights: string; coverNotice: string; colophon: string };
@@ -120,7 +124,7 @@ const ca: Dictionary = {
     previous: 'Volum anterior',
     next: 'Volum següent',
     open: 'Obre la fitxa del llibre',
-    selected: '{title}, de {author}',
+    selected: '{title}, de {author}. Volum {position} de {total}.',
     loading: 'Carregant la prestatgeria…',
     webglUnsupported:
       'El teu navegador no pot mostrar la prestatgeria en 3D. Tot seguit tens el catàleg complet.',
@@ -185,6 +189,8 @@ const ca: Dictionary = {
     title: 'Contacte',
     lead: 'Per a encàrrecs editorials, docència o consultes sobre qualsevol de les traduccions.',
     email: 'Correu electrònic',
+    fields: 'Àmbits de treball',
+    languages: 'Llengües de treball',
     elsewhere: 'També em trobaràs a',
     metaDescription: 'Contacte professional de la traductora literària Judith Raigal Aran.',
   },
@@ -230,7 +236,7 @@ const es: Dictionary = {
     previous: 'Volumen anterior',
     next: 'Volumen siguiente',
     open: 'Abrir la ficha del libro',
-    selected: '{title}, de {author}',
+    selected: '{title}, de {author}. Volumen {position} de {total}.',
     loading: 'Cargando la estantería…',
     webglUnsupported:
       'Tu navegador no puede mostrar la estantería en 3D. A continuación tienes el catálogo completo.',
@@ -295,6 +301,8 @@ const es: Dictionary = {
     title: 'Contacto',
     lead: 'Para encargos editoriales, docencia o consultas sobre cualquiera de las traducciones.',
     email: 'Correo electrónico',
+    fields: 'Ámbitos de trabajo',
+    languages: 'Lenguas de trabajo',
     elsewhere: 'También me encontrarás en',
     metaDescription: 'Contacto profesional de la traductora literaria Judith Raigal Aran.',
   },
@@ -340,7 +348,7 @@ const en: Dictionary = {
     previous: 'Previous volume',
     next: 'Next volume',
     open: 'Open the book record',
-    selected: '{title}, by {author}',
+    selected: '{title}, by {author}. Volume {position} of {total}.',
     loading: 'Loading the shelf…',
     webglUnsupported:
       'Your browser cannot display the 3D shelf. The full catalogue is listed below.',
@@ -405,6 +413,8 @@ const en: Dictionary = {
     title: 'Contact',
     lead: 'For publishing commissions, teaching, or questions about any of the translations.',
     email: 'Email',
+    fields: 'Areas of work',
+    languages: 'Working languages',
     elsewhere: 'You can also find me on',
     metaDescription: 'Professional contact details for literary translator Judith Raigal Aran.',
   },
@@ -450,7 +460,7 @@ const de: Dictionary = {
     previous: 'Vorheriger Band',
     next: 'Nächster Band',
     open: 'Buchdetails öffnen',
-    selected: '{title} von {author}',
+    selected: '{title} von {author}. Band {position} von {total}.',
     loading: 'Regal wird geladen…',
     webglUnsupported:
       'Ihr Browser kann das 3D-Regal nicht darstellen. Der vollständige Katalog folgt unten.',
@@ -516,6 +526,8 @@ const de: Dictionary = {
     title: 'Kontakt',
     lead: 'Für Verlagsaufträge, Lehre oder Fragen zu einer der Übersetzungen.',
     email: 'E-Mail',
+    fields: 'Arbeitsbereiche',
+    languages: 'Arbeitssprachen',
     elsewhere: 'Sie finden mich auch auf',
     metaDescription: 'Beruflicher Kontakt der Literaturübersetzerin Judith Raigal Aran.',
   },
@@ -561,7 +573,7 @@ const fr: Dictionary = {
     previous: 'Volume précédent',
     next: 'Volume suivant',
     open: 'Ouvrir la fiche du livre',
-    selected: '{title}, de {author}',
+    selected: '{title}, de {author}. Volume {position} sur {total}.',
     loading: 'Chargement de l’étagère…',
     webglUnsupported:
       'Votre navigateur ne peut pas afficher l’étagère en 3D. Le catalogue complet est présenté ci-dessous.',
@@ -627,6 +639,8 @@ const fr: Dictionary = {
     title: 'Contact',
     lead: 'Pour des projets éditoriaux, des activités d’enseignement ou toute question sur les traductions.',
     email: 'Courriel',
+    fields: 'Domaines de travail',
+    languages: 'Langues de travail',
     elsewhere: 'Vous pouvez aussi me retrouver sur',
     metaDescription: 'Contact professionnel de la traductrice littéraire Judith Raigal Aran.',
   },

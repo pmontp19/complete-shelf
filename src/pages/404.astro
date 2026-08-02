@@ -23,7 +23,8 @@ const t = useTranslations(DEFAULT_LOCALE);
         color-scheme: light dark;
         --paper: #f7f3ec;
         --ink: #1e1a16;
-        --faint: #8a7f72;
+        /* Keep in step with --ink-faint in global.css: 5.15:1 on --paper. */
+        --faint: #706557;
       }
       @media (prefers-color-scheme: dark) {
         :root {

@@ -1,10 +1,21 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 
-// Update `site` / `base` if the project moves to a custom domain.
+/**
+ * Where the site will live. Defaults to the GitHub Pages project URL; override
+ * both to publish on her own domain without touching any source file:
+ *
+ *   SITE_URL=https://judithraigal.com SITE_BASE=/ npm run build
+ *
+ * Every internal link, the sitemap, the canonicals and the hreflang alternates
+ * are derived from these two, so nothing else needs changing.
+ */
+const SITE_URL = process.env.SITE_URL ?? 'https://pmontp19.github.io';
+const SITE_BASE = process.env.SITE_BASE ?? '/complete-shelf';
+
 export default defineConfig({
-  site: 'https://pmontp19.github.io',
-  base: '/complete-shelf',
+  site: SITE_URL,
+  base: SITE_BASE,
   trailingSlash: 'always',
   output: 'static',
   build: {

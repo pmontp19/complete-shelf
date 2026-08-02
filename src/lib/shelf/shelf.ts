@@ -83,8 +83,17 @@ function visuallyHide(el: HTMLElement): void {
   el.style.margin = '-1px';
 }
 
-function formatSelected(template: string, book: ShelfBook): string {
-  return template.replace('{title}', book.title).replace('{author}', book.author);
+function formatSelected(
+  template: string,
+  book: ShelfBook,
+  position: number,
+  total: number,
+): string {
+  return template
+    .replace('{title}', book.title)
+    .replace('{author}', book.author)
+    .replace('{position}', String(position))
+    .replace('{total}', String(total));
 }
 
 interface ThemePalette {
@@ -548,7 +557,17 @@ export const mountShelf: MountShelf = async (container, options) => {
 
   function announceSelection(): void {
     const book = currentBook();
-    if (book) liveRegion.textContent = formatSelected(labels.selected, book);
+    if (!book) return;
+    liveRegion.textContent = formatSelected(
+      labels.selected,
+      book,
+      currentIndex + 1,
+      books.length,
+    );
+    // Without these a non-visual reader hears one book at a time with no sense
+    // of how long the shelf is or where they are on it.
+    region.setAttribute('aria-setsize', String(books.length));
+    region.setAttribute('aria-posinset', String(currentIndex + 1));
   }
 
   function goTo(targetIndex: number): void {

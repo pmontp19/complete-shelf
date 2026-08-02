@@ -82,8 +82,20 @@ derives from that one record.
 ## Deployment
 
 `.github/workflows/deploy.yml` builds and publishes to GitHub Pages on every push to `main`. The
-covers are committed, so the build needs no network access. If the site moves to its own domain,
-change `site` and `base` in `astro.config.mjs`.
+covers are committed, so the build needs no network access.
+
+### Publishing on her own domain
+
+`site` and `base` are read from the environment, so moving to `judithraigal.com` needs no source
+change:
+
+```bash
+SITE_URL=https://judithraigal.com SITE_BASE=/ npm run build
+```
+
+Canonicals, `hreflang` alternates, the sitemap, `robots.txt` and every internal link and image path
+follow automatically. To make it the default, set those two variables in the workflow's `build` step
+and add a `public/CNAME` file containing the bare domain.
 
 ## About the data
 

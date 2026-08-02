@@ -44,6 +44,10 @@ export interface Profile {
   email: string | null;
   location: LocalisedText;
   bio: LocalisedParagraphs;
+  /** Areas she actually works in. Sourced, not a marketing pitch. */
+  fields: LocalisedParagraphs;
+  /** One line naming the language pair, phrased naturally per locale. */
+  workingLanguages: LocalisedText;
   timeline: TimelineEntry[];
   publications: Publication[];
   links: ProfileLink[];
@@ -89,6 +93,40 @@ export const PROFILE: Profile = {
       'Diplômée en traduction et interprétation de l’Universitat Pompeu Fabra en 2013, j’y ai suivi l’année suivante le master en études de traduction, avec un mémoire sur la réception à Barcelone de La Visite de la vieille dame de Friedrich Dürrenmatt. En 2022, j’ai soutenu ma thèse de doctorat à l’Universitat Rovira i Virgili, sous la direction d’Anthony Pym et de Carmen Bestué, sur la confiance que les juges accordent — ou non — aux interprètes dans les procédures pénales.',
       'Je suis actuellement enseignante associée au département d’études anglaises et allemandes de l’URV et j’enseigne la traduction juridique à l’Universitat Pompeu Fabra ainsi que dans le master en traduction juridique et interprétation judiciaire de l’UAB. L’enseignement et la recherche — traduction juridique, interprétation en milieu social, sociologie de la traduction — accompagnent mon travail de traductrice.',
     ],
+  },
+  fields: {
+    ca: [
+      'Traducció literària de l’anglès, l’alemany i el francès al català',
+      'Traducció jurídica i econòmica',
+      'Docència universitària en traducció jurídica i interpretació judicial',
+    ],
+    es: [
+      'Traducción literaria del inglés, el alemán y el francés al catalán',
+      'Traducción jurídica y económica',
+      'Docencia universitaria en traducción jurídica e interpretación judicial',
+    ],
+    en: [
+      'Literary translation from English, German and French into Catalan',
+      'Legal and economic translation',
+      'University teaching in legal translation and court interpreting',
+    ],
+    de: [
+      'Literaturübersetzung aus dem Englischen, Deutschen und Französischen ins Katalanische',
+      'Juristisches und Wirtschaftsübersetzen',
+      'Universitätslehre in juristischem Übersetzen und Gerichtsdolmetschen',
+    ],
+    fr: [
+      'Traduction littéraire de l’anglais, de l’allemand et du français vers le catalan',
+      'Traduction juridique et économique',
+      'Enseignement universitaire en traduction juridique et interprétation judiciaire',
+    ],
+  },
+  workingLanguages: {
+    ca: 'Alemany, francès i anglès → català i castellà',
+    es: 'Alemán, francés e inglés → catalán y castellano',
+    en: 'German, French and English → Catalan and Spanish',
+    de: 'Deutsch, Französisch und Englisch → Katalanisch und Spanisch',
+    fr: 'Allemand, français et anglais → catalan et espagnol',
   },
   timeline: [
     {
