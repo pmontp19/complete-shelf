@@ -77,7 +77,8 @@ const schema = {
   ogImage={coverFor(book.id)}
   tint={{ color: palette.spineColor, contrast: palette.textColor }}
 >
-  <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(schema)} />
+  <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(schema)}
+  ></script>
 
   <nav class="crumb">
     <a href={sectionPath(locale, 'works')}>← {t.book.back}</a>
@@ -154,7 +155,8 @@ const schema = {
           <span class="pager__title">{previous.title}</span>
         </a>
       ) : (
-        <span />
+        // Holds the first grid column so a lone "next" link stays right-aligned.
+        <span></span>
       )
     }
     {

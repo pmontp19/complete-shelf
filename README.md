@@ -53,10 +53,16 @@ npm install
 npm run dev        # http://localhost:4321/complete-shelf/
 npm run build      # type-checks, then writes dist/
 npm run preview
+npm test           # drives the built site in Chromium (needs `npm run preview` running)
 ```
+
+Needs Node 22.12 or newer — Astro 6 dropped Node 18 and 20.
 
 `npm run build` runs `astro check` first, so a broken translation key or a malformed book record
 fails the build rather than shipping.
+
+On Astro 7 `astro dev` starts a managed background daemon rather than holding the terminal;
+`npm run astro dev stop`, `… dev status` and `… dev logs` control it.
 
 ## Adding or editing a translation
 

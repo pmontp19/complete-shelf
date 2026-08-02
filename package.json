@@ -17,11 +17,11 @@
     "test": "node tests/smoke.mjs"
   },
   "dependencies": {
-    "astro": "^5.6.1",
+    "astro": "^7.1.6",
     "three": "^0.175.0"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.4",
+    "@astrojs/check": "^0.9.10",
     "@playwright/test": "^1.62.1",
     "@types/three": "^0.175.0",
     "sharp": "^0.34.1",

@@ -95,7 +95,7 @@ const personSchema = {
     {/* No webfonts on purpose: the type stacks in global.css resolve locally,
         so the site has zero third-party requests and renders instantly offline. */}
 
-    <script is:inline type="application/ld+json" set:html={JSON.stringify(personSchema)} />
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(personSchema)}></script>
     <slot name="head" />
   </head>
   <body>
