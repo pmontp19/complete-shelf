@@ -13,8 +13,9 @@ export interface TimelineEntry {
 }
 
 /**
- * A peer-reviewed publication or thesis. Titles stay in the language they were
- * published in — translating an academic citation would make it uncitable.
+ * A journal article, book chapter, research report or thesis. Titles stay in the
+ * language they were published in — translating an academic citation would make
+ * it uncitable.
  */
 export interface Publication {
   year: number;
@@ -220,6 +221,21 @@ export const PROFILE: Profile = {
   ],
   publications: [
     {
+      year: 2026,
+      title:
+        '¿Cómo enseñar desde la incertidumbre? Resultados de aprendizaje de traducción en la era de la automatización',
+      venue: 'redit — Revista Electrónica de Didáctica de la Traducción y la Interpretación, 20',
+      with: ['Anthony Pym'],
+      href: 'https://revistas.uma.es/index.php/redit/article/view/24035',
+    },
+    {
+      year: 2026,
+      title: 'Generative AI in the Translation Revision Class. Technical Report on the Spanish Activity',
+      venue: 'Universitat Rovira i Virgili',
+      with: ['Nune Ayvazyan', 'Yu Hao', 'Anthony Pym'],
+      href: 'https://doi.org/10.13140/RG.2.2.33219.26406',
+    },
+    {
       year: 2024,
       title:
         'Recommendations on the translation of academic texts in the social sciences and the humanities',
@@ -237,6 +253,14 @@ export const PROFILE: Profile = {
     },
     {
       year: 2023,
+      title:
+        'Applying a sociological perspective to the analysis of court interpreting interactions: Exploring trust and distrust',
+      venue: "The Interpreters' Newsletter, 28 — EUT Edizioni Università di Trieste",
+      with: ['Carmen Bestué'],
+      href: 'https://www.openstarts.units.it/handle/10077/35554',
+    },
+    {
+      year: 2023,
       title: 'Non-standard court interpreting as risk management',
       venue: 'Introducing New Hypertexts on Interpreting (Studies), John Benjamins',
       with: ['Anthony Pym', 'Carmen Bestué'],
@@ -247,6 +271,43 @@ export const PROFILE: Profile = {
       title: 'Quan els jutges (no) confien en els intèrprets: anàlisi d’un corpus de procediments penals',
       venue: 'Tesi doctoral, Universitat Rovira i Virgili',
       href: 'https://www.tdx.cat/handle/10803/675003',
+    },
+    {
+      year: 2022,
+      title: 'Careers in languages',
+      venue:
+        'Inclusion, Diversity and Communication Across Cultures. A Teacher’s Book with Classroom Activities for Secondary Education, Universitat Autònoma de Barcelona',
+      with: ['Marta Arumí Ribas', 'Carmen Bestué'],
+      href: 'https://ddd.uab.cat/record/259878',
+    },
+    {
+      year: 2021,
+      title:
+        'La recepció crítica de l’estrena de «La visita de la vella dama» [Der Besuch der alten Dame], de Friedrich Dürrenmatt a Barcelona (1962)',
+      venue: 'Anuari TRILCAT, 10 (2020–2021)',
+      href: 'https://dialnet.unirioja.es/servlet/articulo?codigo=8595736',
+    },
+    {
+      year: 2021,
+      title:
+        'Child language brokering and multilingualism in Catalonia: language use and attitudes in a bilingual region',
+      venue: 'Language and Intercultural Communication, 22(4)',
+      with: ['Gema Rubio-Carbonero', 'Mireia Vargas-Urpí'],
+      href: 'https://doi.org/10.1080/14708477.2021.2005617',
+    },
+    {
+      year: 2021,
+      title:
+        'Disseny d’una simulació judicial multilingüe per futurs traductors, intèrprets i operadors jurídics: col·laboració interdepartamental',
+      venue: 'Revista del CIDUI, 5',
+      with: [
+        'Esther Torres-Simón',
+        'Diana Marín Consarnau',
+        'Maria Font i Mas',
+        'Sergio Prats Jané',
+        'Anthony Pym',
+      ],
+      href: 'https://raco.cat/index.php/RevistaCIDUI/article/view/378900',
     },
     {
       year: 2019,
@@ -268,12 +329,14 @@ export const PROFILE: Profile = {
       label: 'Universitat Rovira i Virgili',
       href: 'https://www.deaa.urv.cat/ca/departament/staff/raigal/',
     },
+    { label: 'ORCID', href: 'https://orcid.org/0000-0002-0387-0867', handle: '0000-0002-0387-0867' },
     { label: 'Dialnet', href: 'https://dialnet.unirioja.es/servlet/tesis?codigo=318640' },
     { label: 'X', href: 'https://x.com/judith8ra', handle: '@judith8ra' },
   ],
   sources: [
     'https://www.deaa.urv.cat/ca/departament/staff/raigal/',
     'https://www.uab.cat/doc/mtj-professorat-en.pdf',
+    'https://orcid.org/0000-0002-0387-0867',
     'https://dialnet.unirioja.es/servlet/tesis?codigo=318640',
     'https://www.tdx.cat/handle/10803/675003',
   ],
