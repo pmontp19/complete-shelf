@@ -35,17 +35,22 @@ const PIXEL_RATIO_CAP = 2;
 // wide. Spacing off the cover width left ~5x the spine's own width of dead air
 // between volumes, which read as a nearly empty shelf.
 const SPACING_GAP = 0.012;
-// The centred book turns to face the camera and then needs its full cover
-// width. Neighbours slide outward to open that gap, the way a shelf gives when
-// you pull a volume halfway out.
-const SELECTED_CLEARANCE = 0.05;
+// Air left between two volumes that are pressed against each other. The
+// layout solver treats this as the closest they may ever come, so it is what
+// stops a turning cover from grazing (or entering) the volume beside it.
+const CONTACT_GAP = 0.02;
 // How far the centred volume travels towards the reader. Bounded by the depth
 // of the ledge below: any further and it stands on air.
 const SELECTED_LIFT_Z = 0.24;
 const LEDGE_DEPTH = 0.68;
-const SPREAD_FALLOFF = 1.6;
+const SELECTED_SCALE = 1.05;
 const REST_ROTATION_Y = Math.PI / 2; // spine facing the camera
 const SELECTED_ROTATION_Y = 0; // front cover facing the camera
+// A volume is drawn out before it is turned, the way a hand does it: the turn
+// only starts once the book is this far into the centre. Turning on the way
+// out is what used to make two half-open covers meet in mid-air and shove the
+// whole run sideways at the midpoint of every step.
+const TURN_DELAY = 0.3;
 // Books lean the way books lean. Deterministic per volume, straightened as a
 // book comes to the centre.
 const MAX_LEAN = 0.035;
@@ -368,8 +373,14 @@ export const mountShelf: MountShelf = async (container, options) => {
   const maxWidth = dims.reduce((max, d) => Math.max(max, d.width), 0.42);
   const maxDepth = dims.reduce((max, d) => Math.max(max, d.depth), 0.06);
   const spacing = maxDepth + SPACING_GAP;
-  // Half the extra room the turned-out book needs beyond its own slot.
-  const spread = Math.max(0, (maxWidth + SELECTED_CLEARANCE - spacing) / 2);
+  // The most room the run can be asked to give up on one side of the
+  // selection: a fully turned-out cover pressed against a racked neighbour.
+  // The per-frame solver below works this out exactly, per pair; this is the
+  // worst case, kept as a scalar so the camera can frame for it.
+  const spread = Math.max(
+    0,
+    (maxWidth * SELECTED_SCALE) / 2 + maxDepth / 2 + CONTACT_GAP - spacing,
+  );
   const shelfTopY = 0;
 
   // Recomputed in `updateCameraFraming` from the frame the camera actually
@@ -767,25 +778,146 @@ export const mountShelf: MountShelf = async (container, options) => {
     options.onProgress?.(position, total);
   }
 
+  /**
+   * One volume's pose for the current frame, before the run has been spaced
+   * out. Reused between frames — the layout runs every frame and must not
+   * allocate.
+   */
+  interface LayoutSlot {
+    rig: BookRig;
+    /** Signed distance from the carriage, in slots. */
+    offset: number;
+    focus: number;
+    hover: number;
+    rotationY: number;
+    scale: number;
+    /** Half the width this volume covers along X, in its current pose. */
+    halfX: number;
+    x: number;
+  }
+
+  const slots: LayoutSlot[] = rigs.map((rig) => ({
+    rig,
+    offset: 0,
+    focus: 0,
+    hover: 0,
+    rotationY: REST_ROTATION_Y,
+    scale: 1,
+    halfX: 0,
+    x: 0,
+  }));
+  /** Extra room pair `i`..`i+1` needs beyond one slot of pitch. */
+  const gapExtras = new Float64Array(Math.max(0, slots.length - 1));
+  const byOffset = (a: LayoutSlot, b: LayoutSlot): number => a.offset - b.offset;
+
+  /**
+   * Half the footprint, along the camera's X axis, of a book-sized box turned
+   * `angle` radians about Y. Racked (angle = π/2) that is half its spine
+   * thickness; turned out (angle = 0) it is half its full cover width, and in
+   * between it is the width the two swept corners actually need.
+   */
+  function halfExtentX(dimensions: BookDimensions, angle: number, scale: number): number {
+    return (
+      (scale * (Math.abs(Math.cos(angle)) * dimensions.width + Math.abs(Math.sin(angle)) * dimensions.depth)) / 2
+    );
+  }
+
+  /**
+   * Spaces the run out so no two volumes ever occupy the same stretch of X.
+   *
+   * Pitch alone is not enough: a volume turning to face the camera grows from
+   * one spine thickness to a full cover width, and a fixed spread profile
+   * either leaves a hole at rest or lets the turning cover enter the volumes
+   * beside it halfway through the step. Instead each neighbouring pair is
+   * asked how much room it actually needs right now, and the surplus is
+   * inserted between them — pushing the rest of the run outwards from the
+   * carriage, exactly the way a real shelf gives when a volume is drawn out.
+   *
+   * Books are already sorted by offset, so keeping every adjacent pair clear
+   * keeps the whole run clear.
+   */
+  function spaceOutRun(count: number): void {
+    for (let i = 0; i < count - 1; i += 1) {
+      gapExtras[i] = Math.max(0, slots[i].halfX + slots[i + 1].halfX + CONTACT_GAP - spacing);
+    }
+
+    // The last volume at or left of the carriage. The run opens outwards from
+    // here, so the selection itself stays put and the shelf parts around it.
+    let pivot = -1;
+    for (let i = 0; i < count; i += 1) {
+      if (slots[i].offset > 0) break;
+      pivot = i;
+    }
+
+    // The pair straddling the carriage shares its surplus by how far the
+    // carriage has crossed it: sitting on a volume, that volume holds still
+    // and its neighbour takes the whole push; halfway between two, they part
+    // symmetrically. This is what keeps the run from lurching sideways as the
+    // carriage passes from one volume to the next.
+    let rightShare = 0;
+    let leftShare = 0;
+    if (pivot >= 0 && pivot + 1 < count) {
+      const crossed = clamp01(slots[pivot + 1].offset);
+      rightShare = gapExtras[pivot] * crossed;
+      leftShare = gapExtras[pivot] * (1 - crossed);
+    }
+
+    let acc = rightShare;
+    for (let i = pivot + 1; i < count; i += 1) {
+      slots[i].x = slots[i].offset * spacing + acc;
+      if (i < count - 1) acc += gapExtras[i];
+    }
+    acc = leftShare;
+    for (let i = pivot; i >= 0; i -= 1) {
+      slots[i].x = slots[i].offset * spacing - acc;
+      if (i > 0) acc += gapExtras[i - 1];
+    }
+  }
+
   function layoutBooks(now: number, elapsed: number, dt: number): void {
     const position = getPosition(now);
     reportProgress(position);
     const hoverRate = Math.min(1, dt * 9);
+    const count = slots.length;
 
-    for (const rig of rigs) {
+    // Pass one: every volume's own pose, and the room it needs for it.
+    for (let i = 0; i < count; i += 1) {
+      const slot = slots[i];
+      const rig = slot.rig;
       const offset = slotOffset(rig.index, position);
-      const distance = Math.abs(offset);
-      const focus = smootherstep(1 - clamp01(distance));
+      const proximity = clamp01(1 - Math.abs(offset));
+      const focus = smootherstep(proximity);
+      // The turn trails the draw-out, so a volume is already clear of the run
+      // before its cover starts sweeping sideways.
+      const turn = smootherstep(clamp01((proximity - TURN_DELAY) / (1 - TURN_DELAY)));
 
       const wantsHover = hoverIndex === rig.index && focus < 0.9 ? 1 : 0;
       rig.hover += (wantsHover - rig.hover) * hoverRate;
       const hover = reducedMotion ? wantsHover : rig.hover;
 
-      const rotationY = lerp(REST_ROTATION_Y, SELECTED_ROTATION_Y, focus);
-      const scale = 1 + focus * 0.05;
-      // tanh saturates, so books past the immediate neighbours keep uniform
-      // spacing while the gap around the selection opens smoothly.
-      const x = offset * spacing + Math.tanh(offset * SPREAD_FALLOFF) * spread;
+      const scale = 1 + focus * (SELECTED_SCALE - 1);
+      // The ambient parallax yaw is part of the pose, so the spacing has to
+      // account for it too — otherwise a cover tilted towards the pointer
+      // reaches past the clearance that was solved for.
+      const parallaxYaw = reducedMotion ? 0 : -pointerSmooth.x * 0.05 * focus;
+      const rotationY = lerp(REST_ROTATION_Y, SELECTED_ROTATION_Y, turn);
+
+      slot.offset = offset;
+      slot.focus = focus;
+      slot.hover = hover;
+      slot.rotationY = rotationY;
+      slot.scale = scale;
+      slot.halfX = halfExtentX(rig.dims, rotationY + parallaxYaw, scale);
+    }
+
+    slots.sort(byOffset);
+    spaceOutRun(count);
+
+    // Pass two: commit the solved X and the rest of the pose.
+    for (let i = 0; i < count; i += 1) {
+      const { rig, offset, focus, hover, rotationY, scale, x } = slots[i];
+      const distance = Math.abs(offset);
+
       // A hovered volume rides up out of the run, the way you tip one out with
       // a finger before deciding to take it.
       const y = shelfTopY + rig.dims.height / 2 + focus * 0.04 + hover * 0.05;
