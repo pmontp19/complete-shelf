@@ -137,6 +137,18 @@ console.log('\n# catalogue');
   if ((await page.locator('.card:not([hidden])').count()) !== EXPECTED) fail('reset filter did not restore all cards');
   else ok('filter reset');
 
+  // The pointer is still resting on the chip it just clicked. `.chip:hover`
+  // outspecifies `.chip--on`, so this is where the active label can go
+  // invisible — same ink on ink.
+  const hovered = await page.evaluate(() => {
+    const el = document.activeElement;
+    const cs = getComputedStyle(el);
+    return { text: el.textContent?.trim(), color: cs.color, bg: cs.backgroundColor };
+  });
+  if (hovered.color === hovered.bg) {
+    fail(`hovered active chip "${hovered.text}" is invisible: ${hovered.color} on ${hovered.bg}`);
+  } else ok('active chip readable while hovered');
+
   await page.screenshot({ path: `${SHOTS}catalogue.png`, fullPage: false });
   await page.close();
 }
