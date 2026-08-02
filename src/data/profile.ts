@@ -12,6 +12,20 @@ export interface TimelineEntry {
   href?: string;
 }
 
+/**
+ * A peer-reviewed publication or thesis. Titles stay in the language they were
+ * published in — translating an academic citation would make it uncitable.
+ */
+export interface Publication {
+  year: number;
+  title: string;
+  /** Journal, publisher or awarding institution. */
+  venue: string;
+  /** Co-authors in citation order, excluding her. */
+  with?: string[];
+  href?: string;
+}
+
 export interface ProfileLink {
   label: string;
   href: string;
@@ -21,11 +35,17 @@ export interface ProfileLink {
 
 export interface Profile {
   name: string;
+  /**
+   * Portrait shown on the biography page. Left null until she supplies one —
+   * the layout simply drops the column rather than showing a placeholder.
+   */
+  portrait: { src: string; width: number; height: number } | null;
   /** Public, professional contact address only. */
   email: string | null;
   location: LocalisedText;
   bio: LocalisedParagraphs;
   timeline: TimelineEntry[];
+  publications: Publication[];
   links: ProfileLink[];
   /** Source URLs backing the biography, rendered as a small credits line. */
   sources: string[];
@@ -33,6 +53,7 @@ export interface Profile {
 
 export const PROFILE: Profile = {
   name: 'Judith Raigal Aran',
+  portrait: null,
   // Published on her URV departmental staff page; the only contact channel used here.
   email: 'judith.raigal@urv.cat',
   location: {
@@ -157,6 +178,51 @@ export const PROFILE: Profile = {
         fr: 'Mémoire de fin d’études sur la présence du dialecte styrien sur internet.',
       },
       href: 'https://repositori.upf.edu/handle/10230/22080',
+    },
+  ],
+  publications: [
+    {
+      year: 2024,
+      title:
+        'Recommendations on the translation of academic texts in the social sciences and the humanities',
+      venue: 'Social Science Information',
+      with: ['Esperança Bielsa', 'Mattea Cussel', 'Oriol Barranco', 'Carmen Bestué'],
+      href: 'https://journals.sagepub.com/doi/10.1177/05390184241261509',
+    },
+    {
+      year: 2023,
+      title:
+        'Academics in the semi-periphery: Translation and linguistic strategies on the rocky road to publishing in English',
+      venue: 'Social Science Information',
+      with: ['Mattea Cussel', 'Oriol Barranco'],
+      href: 'https://journals.sagepub.com/doi/abs/10.1177/05390184231221460',
+    },
+    {
+      year: 2023,
+      title: 'Non-standard court interpreting as risk management',
+      venue: 'Introducing New Hypertexts on Interpreting (Studies), John Benjamins',
+      with: ['Anthony Pym', 'Carmen Bestué'],
+      href: 'https://benjamins.com/catalog/btl.160.06pym',
+    },
+    {
+      year: 2022,
+      title: 'Quan els jutges (no) confien en els intèrprets: anàlisi d’un corpus de procediments penals',
+      venue: 'Tesi doctoral, Universitat Rovira i Virgili',
+      href: 'https://www.tdx.cat/handle/10803/675003',
+    },
+    {
+      year: 2019,
+      title: 'Normas recomendadas para trabajar con intérpretes judiciales',
+      venue: 'Grup de Recerca Intercultural, URV',
+      with: ['Anthony Pym'],
+      href: 'https://www.intercultural.urv.cat/media/upload/domain_317/arxius/Normas%20recomendadas_ES_Agosto2019_AP.pdf',
+    },
+    {
+      year: 2018,
+      title:
+        'Les expectatives del client: el contracte de serveis d’interpretació i traducció dels òrgans judicials de Catalunya',
+      venue: 'Recerca en Humanitats 2018',
+      href: 'https://dialnet.unirioja.es/servlet/articulo?codigo=6641047',
     },
   ],
   links: [

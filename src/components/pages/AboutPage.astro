@@ -3,6 +3,7 @@ import { type Locale } from '~/i18n/config';
 import { useTranslations } from '~/i18n/ui';
 import { PROFILE, bioFor } from '~/data/profile';
 import { ALL_BOOKS } from '~/data/books';
+import { assetPath } from '~/i18n/paths';
 
 interface Props {
   locale: Locale;
@@ -25,9 +26,51 @@ const span = years.length > 0 ? `${Math.min(...years)}–${Math.max(...years)}` 
 <div class="about">
   <div class="about__prose">
     {paragraphs.map((paragraph) => <p>{paragraph}</p>)}
+
+    {
+      PROFILE.publications.length > 0 && (
+        <section class="research">
+          <h2>{t.about.research}</h2>
+          <ol>
+            {PROFILE.publications.map((entry) => (
+              <li>
+                <span class="research__year">{entry.year}</span>
+                <span class="research__body">
+                  <cite>
+                    {entry.href ? (
+                      <a href={entry.href} rel="noopener" target="_blank">
+                        {entry.title}
+                      </a>
+                    ) : (
+                      entry.title
+                    )}
+                  </cite>
+                  <span class="research__venue">{entry.venue}</span>
+                  {entry.with && (
+                    <span class="research__with">{t.book.coTranslators} {entry.with.join(', ')}</span>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )
+    }
   </div>
 
   <aside class="about__side">
+    {
+      PROFILE.portrait && (
+        <img
+          class="portrait"
+          src={assetPath(PROFILE.portrait.src)}
+          width={PROFILE.portrait.width}
+          height={PROFILE.portrait.height}
+          alt={t.about.portraitAlt}
+        />
+      )
+    }
+
     {
       span && (
         <div class="fact">
@@ -91,6 +134,85 @@ const span = years.length > 0 ? `${Math.min(...years)}–${Math.max(...years)}` 
     display: grid;
     gap: 2rem;
     padding-top: 0.4rem;
+  }
+
+  .portrait {
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    border-radius: 2px;
+    box-shadow: var(--shadow-md);
+  }
+
+  /* --- research ---------------------------------------------------------- */
+
+  .research {
+    margin-top: clamp(2.5rem, 6vw, 4rem);
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--rule);
+  }
+
+  .research h2 {
+    font-family: var(--font-sans);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 1.5rem;
+  }
+
+  .research ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 1.35rem;
+  }
+
+  .research li {
+    display: grid;
+    grid-template-columns: 3.2rem minmax(0, 1fr);
+    gap: 0 0.75rem;
+    align-items: baseline;
+  }
+
+  .research__year {
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-faint);
+  }
+
+  .research__body {
+    display: grid;
+    gap: 0.15rem;
+    min-width: 0;
+  }
+
+  .research cite {
+    font-style: normal;
+    font-size: 0.98rem;
+    line-height: 1.4;
+  }
+
+  .research__venue,
+  .research__with {
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    color: var(--ink-faint);
+    line-height: 1.5;
+  }
+
+  .research__venue {
+    font-style: italic;
+  }
+
+  @media (max-width: 30rem) {
+    .research li {
+      grid-template-columns: 1fr;
+      gap: 0.2rem;
+    }
   }
 
   .fact {

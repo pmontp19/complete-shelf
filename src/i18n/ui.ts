@@ -67,7 +67,15 @@ export interface Dictionary {
     string
   >;
   languages: Record<'ca' | 'es' | 'en' | 'de' | 'fr' | 'it', string>;
-  about: { title: string; lead: string; metaDescription: string };
+  about: {
+    title: string;
+    lead: string;
+    /** Heading over the academic-publication list. */
+    research: string;
+    /** Alt text for the portrait, if one is supplied. */
+    portraitAlt: string;
+    metaDescription: string;
+  };
   contact: {
     title: string;
     lead: string;
@@ -168,6 +176,8 @@ const ca: Dictionary = {
   about: {
     title: 'Biografia',
     lead: 'Traductora literària i docent universitària.',
+    research: 'Recerca i publicacions',
+    portraitAlt: 'Retrat de Judith Raigal Aran',
     metaDescription:
       'Biografia professional de Judith Raigal Aran, traductora literària i docent a la URV i la UPF.',
   },
@@ -276,6 +286,8 @@ const es: Dictionary = {
   about: {
     title: 'Biografía',
     lead: 'Traductora literaria y docente universitaria.',
+    research: 'Investigación y publicaciones',
+    portraitAlt: 'Retrato de Judith Raigal Aran',
     metaDescription:
       'Biografía profesional de Judith Raigal Aran, traductora literaria y docente en la URV y la UPF.',
   },
@@ -384,6 +396,8 @@ const en: Dictionary = {
   about: {
     title: 'Biography',
     lead: 'Literary translator and university lecturer.',
+    research: 'Research and publications',
+    portraitAlt: 'Portrait of Judith Raigal Aran',
     metaDescription:
       'Professional biography of Judith Raigal Aran, literary translator and lecturer at URV and UPF.',
   },
@@ -493,6 +507,8 @@ const de: Dictionary = {
   about: {
     title: 'Biografie',
     lead: 'Literaturübersetzerin und Universitätsdozentin.',
+    research: 'Forschung und Publikationen',
+    portraitAlt: 'Porträt von Judith Raigal Aran',
     metaDescription:
       'Berufliche Biografie von Judith Raigal Aran, Literaturübersetzerin und Dozentin an der URV und der UPF.',
   },
@@ -602,6 +618,8 @@ const fr: Dictionary = {
   about: {
     title: 'Biographie',
     lead: 'Traductrice littéraire et enseignante universitaire.',
+    research: 'Recherche et publications',
+    portraitAlt: 'Portrait de Judith Raigal Aran',
     metaDescription:
       'Biographie professionnelle de Judith Raigal Aran, traductrice littéraire et enseignante à l’URV et à l’UPF.',
   },
