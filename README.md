@@ -84,6 +84,16 @@ derives from that one record.
 `.github/workflows/deploy.yml` builds and publishes to GitHub Pages on every push to `main`. The
 covers are committed, so the build needs no network access.
 
+### Vercel
+
+Detected automatically. Vercel serves the build at the domain root, so the
+GitHub Pages sub-path is dropped there (`base: '/'`) and `site` is taken from
+`VERCEL_PROJECT_PRODUCTION_URL`. Nothing to configure; `vercel.json` just pins
+the framework preset, the output directory and trailing slashes.
+
+Without this the site 404s on Vercel: every asset and link would be requested
+under `/complete-shelf/`, which only exists on GitHub Pages.
+
 ### Publishing on her own domain
 
 `site` and `base` are read from the environment, so moving to `judithraigal.com` needs no source

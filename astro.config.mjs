@@ -10,8 +10,18 @@ import { defineConfig } from 'astro/config';
  * Every internal link, the sitemap, the canonicals and the hreflang alternates
  * are derived from these two, so nothing else needs changing.
  */
-const SITE_URL = process.env.SITE_URL ?? 'https://pmontp19.github.io';
-const SITE_BASE = process.env.SITE_BASE ?? '/complete-shelf';
+
+// Vercel serves the build at the domain root, so the GitHub Pages project
+// sub-path would 404 every asset and link there. Detect it and drop the base.
+// VERCEL, VERCEL_URL and VERCEL_PROJECT_PRODUCTION_URL are injected by Vercel.
+const onVercel = process.env.VERCEL === '1';
+
+const vercelUrl =
+  process.env.VERCEL_PROJECT_PRODUCTION_URL ?? (onVercel ? process.env.VERCEL_URL : undefined);
+
+const SITE_URL =
+  process.env.SITE_URL ?? (vercelUrl ? `https://${vercelUrl}` : 'https://pmontp19.github.io');
+const SITE_BASE = process.env.SITE_BASE ?? (onVercel ? '/' : '/complete-shelf');
 
 export default defineConfig({
   site: SITE_URL,
