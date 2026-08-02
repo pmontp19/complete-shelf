@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="JR">
+  <rect width="32" height="32" rx="4" fill="#7a3b2e" />
+  <!-- Three book spines, the mark of the shelf. -->
+  <rect x="7" y="8" width="4.4" height="16" rx="0.8" fill="#f7f3ec" />
+  <rect x="13.2" y="10" width="4.4" height="14" rx="0.8" fill="#f7f3ec" opacity="0.78" />
+  <rect x="19.4" y="6.5" width="4.4" height="17.5" rx="0.8" fill="#f7f3ec" opacity="0.56" />
+  <rect x="5" y="24.6" width="22" height="1.8" rx="0.9" fill="#f7f3ec" />
+</svg>

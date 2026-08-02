@@ -1,0 +1,307 @@
+---
+import { type Locale } from '~/i18n/config';
+import { useTranslations } from '~/i18n/ui';
+import { ALL_BOOKS, toShelfBooks, paletteFor, thumbFor } from '~/data/books';
+import { bookPath } from '~/i18n/paths';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+
+const shelfBooks = toShelfBooks(locale, { languages: t.languages });
+
+const panels = ALL_BOOKS.map((book) => ({
+  id: book.id,
+  title: book.title,
+  originalTitle: book.originalTitle,
+  author: book.author,
+  publisher: book.publisher,
+  year: book.year,
+  sourceLanguage: t.languages[book.originalLanguage],
+  targetLanguage: t.languages[book.targetLanguage],
+  href: bookPath(locale, book.id),
+  palette: paletteFor(book.id),
+}));
+
+const payload = {
+  books: shelfBooks,
+  labels: {
+    region: t.shelf.region,
+    previous: t.shelf.previous,
+    next: t.shelf.next,
+    open: t.shelf.open,
+    selected: t.shelf.selected,
+    loading: t.shelf.loading,
+    webglUnsupported: t.shelf.webglUnsupported,
+  },
+};
+---
+
+<section class="shelf" data-shelf-root>
+  <div class="shelf__stage">
+    <div class="shelf__canvas" data-shelf-canvas>
+      <p class="shelf__loading" data-shelf-loading>{t.shelf.loading}</p>
+    </div>
+  </div>
+
+  <aside class="shelf__panel" aria-live="polite" aria-atomic="true">
+    <p class="eyebrow">{t.home.selectedHeading}</p>
+    {
+      panels.map((book, index) => (
+        <article
+          class="detail"
+          data-shelf-detail={book.id}
+          hidden={index !== 0}
+          style={`--tint:${book.palette.spineColor};--tint-contrast:${book.palette.textColor};`}
+        >
+          <h2 class="detail__title">{book.title}</h2>
+          <p class="detail__author">{book.author}</p>
+          <dl class="detail__meta">
+            <div>
+              <dt>{t.book.originalTitle}</dt>
+              <dd><i>{book.originalTitle}</i></dd>
+            </div>
+            <div>
+              <dt>{t.book.publisher}</dt>
+              <dd>{book.publisher}, {book.year}</dd>
+            </div>
+            <div>
+              <dt>{t.book.from}</dt>
+              <dd>{book.sourceLanguage} → {book.targetLanguage}</dd>
+            </div>
+          </dl>
+          <a class="button" href={book.href}>{t.shelf.open}</a>
+        </article>
+      ))
+    }
+  </aside>
+
+  {/* Progressive enhancement: this list is the page until (and unless) the
+      WebGL shelf mounts successfully. */}
+  <div class="shelf__fallback" data-shelf-fallback>
+    <h2 class="visually-hidden">{t.shelf.listFallback}</h2>
+    <ul class="fallback-grid">
+      {
+        ALL_BOOKS.map((book) => (
+          <li>
+            <a href={bookPath(locale, book.id)}>
+              <img
+                src={thumbFor(book.id)}
+                width="320"
+                height="480"
+                loading="lazy"
+                decoding="async"
+                alt={`${book.title} — ${book.author}`}
+              />
+              <span class="fallback-grid__title">{book.title}</span>
+              <span class="fallback-grid__author">{book.author}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+
+  <script is:inline type="application/json" data-shelf-payload set:html={JSON.stringify(payload)}
+  ></script>
+</section>
+
+<script>
+  import { mountShelf } from '~/lib/shelf/shelf';
+  import type { ShelfOptions } from '~/lib/shelf/types';
+
+  const root = document.querySelector<HTMLElement>('[data-shelf-root]');
+  const canvas = root?.querySelector<HTMLElement>('[data-shelf-canvas]');
+  const payloadEl = root?.querySelector<HTMLScriptElement>('[data-shelf-payload]');
+
+  if (root && canvas && payloadEl?.textContent) {
+    const payload = JSON.parse(payloadEl.textContent) as Pick<ShelfOptions, 'books' | 'labels'>;
+    const details = new Map<string, HTMLElement>();
+    for (const el of root.querySelectorAll<HTMLElement>('[data-shelf-detail]')) {
+      details.set(el.dataset.shelfDetail!, el);
+    }
+
+    const showDetail = (id: string) => {
+      for (const [key, el] of details) el.hidden = key !== id;
+    };
+
+    mountShelf(canvas, {
+      ...payload,
+      onSelect(book) {
+        showDetail(book.id);
+        root.style.setProperty('--tint', book.spineColor);
+      },
+      onActivate(book) {
+        window.location.href = book.href;
+      },
+    })
+      .then(() => {
+        root.dataset.mounted = 'true';
+        root.querySelector<HTMLElement>('[data-shelf-loading]')?.remove();
+      })
+      .catch((error) => {
+        // Leave the HTML fallback in place; it is a complete experience.
+        console.error('[shelf] mount failed, keeping the static catalogue', error);
+        root.querySelector<HTMLElement>('[data-shelf-loading]')?.remove();
+      });
+  }
+</script>
+
+<style>
+  .shelf {
+    display: grid;
+    gap: clamp(1.5rem, 4vw, 3rem);
+    grid-template-columns: 1fr;
+    align-items: center;
+  }
+
+  @media (min-width: 62rem) {
+    .shelf {
+      grid-template-columns: minmax(0, 1.9fr) minmax(17rem, 0.9fr);
+    }
+  }
+
+  .shelf__stage {
+    min-width: 0;
+  }
+
+  .shelf__canvas {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    min-height: 20rem;
+    max-height: min(72vh, 40rem);
+    border-radius: calc(var(--radius) * 2);
+    overflow: hidden;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--tint) 8%, var(--paper)),
+      var(--paper-sunk)
+    );
+    transition: background 600ms var(--ease);
+  }
+
+  .shelf__canvas :global(canvas) {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .shelf__loading {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-content: center;
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    color: var(--ink-faint);
+  }
+
+  /* The 3D shelf and the static grid are mutually exclusive. */
+  .shelf__panel {
+    display: none;
+  }
+
+  .shelf[data-mounted='true'] .shelf__panel {
+    display: block;
+  }
+
+  .shelf[data-mounted='true'] .shelf__fallback {
+    display: none;
+  }
+
+  .shelf:not([data-mounted='true']) .shelf__stage {
+    display: none;
+  }
+
+  .shelf__fallback {
+    grid-column: 1 / -1;
+  }
+
+  .detail__title {
+    font-size: clamp(1.35rem, 1.1rem + 1vw, 1.85rem);
+    margin-bottom: 0.15em;
+  }
+
+  .detail__author {
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    letter-spacing: 0.04em;
+    color: var(--ink-faint);
+    margin-bottom: 1.4em;
+  }
+
+  .detail__meta {
+    display: grid;
+    gap: 0.75rem;
+    margin: 0 0 1.75rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--rule);
+  }
+
+  .detail__meta dt {
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 0.15rem;
+  }
+
+  .detail__meta dd {
+    margin: 0;
+    font-size: 0.95rem;
+  }
+
+  /* The cover pipeline already picked a WCAG-checked foreground for each
+     spine colour; use it instead of assuming every cover is dark. */
+  .detail .button {
+    --button-bg: var(--tint);
+    --button-fg: var(--tint-contrast);
+  }
+
+  .fallback-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+    gap: clamp(1.25rem, 3vw, 2.25rem);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .fallback-grid a {
+    display: grid;
+    gap: 0.15rem;
+    text-decoration: none;
+  }
+
+  .fallback-grid img {
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+    border-radius: 2px;
+    box-shadow: var(--shadow-md);
+    margin-bottom: 0.6rem;
+    transition: transform 220ms var(--ease);
+  }
+
+  .fallback-grid a:hover img {
+    transform: translateY(-3px);
+  }
+
+  .fallback-grid__title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .fallback-grid__author {
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    color: var(--ink-faint);
+  }
+</style>

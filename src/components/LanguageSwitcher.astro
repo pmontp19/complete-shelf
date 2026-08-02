@@ -1,0 +1,77 @@
+---
+import { LOCALES, LOCALE_NAMES, LOCALE_TAGS, type Locale } from '~/i18n/config';
+import { translatePath } from '~/i18n/paths';
+import { useTranslations } from '~/i18n/ui';
+import type { PageRef } from '~/i18n/page-ref';
+
+interface Props {
+  locale: Locale;
+  page: PageRef;
+}
+
+const { locale, page } = Astro.props;
+const t = useTranslations(locale);
+
+// Short codes keep the switcher compact on phones; the full name stays in the
+// accessible name so screen readers announce something meaningful.
+const SHORT: Record<Locale, string> = { ca: 'CA', es: 'ES', en: 'EN', de: 'DE', fr: 'FR' };
+---
+
+<nav class="langs" aria-label={t.a11y.languageSwitcher}>
+  <ul>
+    {
+      LOCALES.map((code) => {
+        const isCurrent = code === locale;
+        return (
+          <li>
+            <a
+              href={translatePath(code, page)}
+              hreflang={LOCALE_TAGS[code]}
+              lang={LOCALE_TAGS[code]}
+              aria-current={isCurrent ? 'page' : undefined}
+              aria-label={isCurrent ? `${t.a11y.currentLanguage}: ${LOCALE_NAMES[code]}` : LOCALE_NAMES[code]}
+              class:list={['lang', { 'lang--current': isCurrent }]}
+            >
+              <span aria-hidden="true">{SHORT[code]}</span>
+            </a>
+          </li>
+        );
+      })
+    }
+  </ul>
+</nav>
+
+<style>
+  .langs ul {
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .lang {
+    display: block;
+    padding: 0.3rem 0.45rem;
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--ink-faint);
+    text-decoration: none;
+    border-radius: var(--radius);
+    transition: color 160ms var(--ease), background 160ms var(--ease);
+  }
+
+  .lang:hover {
+    color: var(--ink);
+    background: var(--paper-sunk);
+  }
+
+  .lang--current {
+    color: var(--ink);
+    font-weight: 650;
+    background: var(--paper-sunk);
+  }
+</style>

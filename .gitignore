@@ -1,1 +1,7 @@
 .DS_Store
+node_modules/
+dist/
+.astro/
+*.log
+
+tests/__screenshots__/

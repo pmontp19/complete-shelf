@@ -1,0 +1,256 @@
+---
+import { type Locale } from '~/i18n/config';
+import { bookPath } from '~/i18n/paths';
+import { useTranslations, interpolate } from '~/i18n/ui';
+import { ALL_BOOKS, SOURCE_LANGUAGES, CATEGORIES, thumbFor, paletteFor } from '~/data/books';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+
+const count = ALL_BOOKS.length;
+const countLabel = count === 1 ? t.works.countOne : interpolate(t.works.count, { count });
+---
+
+<div class="page-head">
+  <p class="eyebrow">{countLabel}</p>
+  <h1>{t.works.title}</h1>
+  <p class="lead">{t.works.lead}</p>
+</div>
+
+{
+  count > 0 && (
+    <div class="filters" data-filters>
+      <fieldset>
+        <legend>{t.works.filterLanguage}</legend>
+        <div class="chips">
+          <button type="button" class="chip chip--on" data-filter="language" data-value="all">
+            {t.works.filterAll}
+          </button>
+          {SOURCE_LANGUAGES.map((code) => (
+            <button type="button" class="chip" data-filter="language" data-value={code}>
+              {t.languages[code]}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>{t.works.filterCategory}</legend>
+        <div class="chips">
+          <button type="button" class="chip chip--on" data-filter="category" data-value="all">
+            {t.works.filterAll}
+          </button>
+          {CATEGORIES.map((code) => (
+            <button type="button" class="chip" data-filter="category" data-value={code}>
+              {t.categories[code]}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+    </div>
+  )
+}
+
+<ul class="catalogue" data-catalogue>
+  {
+    ALL_BOOKS.map((book) => (
+      <li
+        class="card"
+        data-language={book.originalLanguage}
+        data-category={book.category}
+        style={`--tint:${paletteFor(book.id).spineColor};`}
+      >
+        <a href={bookPath(locale, book.id)}>
+          <span class="card__cover">
+            <img
+              src={thumbFor(book.id)}
+              width="320"
+              height="480"
+              loading="lazy"
+              decoding="async"
+              alt={`${book.title} — ${book.author}`}
+            />
+          </span>
+          <span class="card__body">
+            <span class="card__title">{book.title}</span>
+            <span class="card__author">{book.author}</span>
+            <span class="card__meta">
+              {book.publisher} · {book.year}
+            </span>
+          </span>
+        </a>
+      </li>
+    ))
+  }
+</ul>
+
+<p class="empty" data-empty hidden>{t.works.empty}</p>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-filters]');
+  const list = document.querySelector<HTMLElement>('[data-catalogue]');
+  const empty = document.querySelector<HTMLElement>('[data-empty]');
+
+  if (root && list && empty) {
+    const state: Record<string, string> = { language: 'all', category: 'all' };
+
+    const apply = () => {
+      let visible = 0;
+      for (const card of list.querySelectorAll<HTMLElement>('.card')) {
+        const matches =
+          (state.language === 'all' || card.dataset.language === state.language) &&
+          (state.category === 'all' || card.dataset.category === state.category);
+        card.hidden = !matches;
+        if (matches) visible += 1;
+      }
+      empty.hidden = visible > 0;
+    };
+
+    root.addEventListener('click', (event) => {
+      const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-filter]');
+      if (!button) return;
+      const group = button.dataset.filter!;
+      state[group] = button.dataset.value!;
+      for (const sibling of root.querySelectorAll<HTMLElement>(`[data-filter="${group}"]`)) {
+        sibling.classList.toggle('chip--on', sibling === button);
+        sibling.setAttribute('aria-pressed', String(sibling === button));
+      }
+      apply();
+    });
+
+    for (const button of root.querySelectorAll<HTMLElement>('[data-filter]')) {
+      button.setAttribute('aria-pressed', String(button.classList.contains('chip--on')));
+    }
+  }
+</script>
+
+<style>
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: clamp(1rem, 3vw, 2.5rem);
+    padding-block: 1.25rem;
+    border-block: 1px solid var(--rule);
+    margin-bottom: clamp(1.75rem, 4vw, 3rem);
+  }
+
+  fieldset {
+    border: 0;
+    margin: 0;
+    padding: 0;
+    min-width: 0;
+  }
+
+  legend {
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    padding: 0;
+    margin-bottom: 0.55rem;
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .chip {
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    padding: 0.3rem 0.75rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: all 160ms var(--ease);
+  }
+
+  /* `:not(.chip--on)` matters: `.chip:hover` outspecifies `.chip--on`, so
+     without it hovering the active chip painted var(--ink) text on a
+     var(--ink) background and the label vanished. */
+  .chip:hover:not(.chip--on) {
+    border-color: var(--ink-faint);
+    color: var(--ink);
+  }
+
+  .chip--on {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--paper);
+  }
+
+  .chip--on:hover {
+    background: color-mix(in srgb, var(--ink) 85%, var(--paper));
+    border-color: color-mix(in srgb, var(--ink) 85%, var(--paper));
+  }
+
+  .catalogue {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr));
+    gap: clamp(1.5rem, 4vw, 3rem) clamp(1.25rem, 3vw, 2.25rem);
+    list-style: none;
+    margin: 0 0 3rem;
+    padding: 0;
+  }
+
+  .card a {
+    display: grid;
+    gap: 0.9rem;
+    text-decoration: none;
+    height: 100%;
+  }
+
+  .card__cover img {
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+    border-radius: 2px;
+    box-shadow: var(--shadow-md);
+    transition: transform 240ms var(--ease), box-shadow 240ms var(--ease);
+  }
+
+  .card a:hover .card__cover img {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 14px rgb(30 26 22 / 0.12), 0 22px 48px
+      color-mix(in srgb, var(--tint) 28%, transparent);
+  }
+
+  .card__body {
+    display: grid;
+    gap: 0.1rem;
+    align-content: start;
+  }
+
+  .card__title {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .card__author {
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+  }
+
+  .card__meta {
+    font-family: var(--font-sans);
+    font-size: 0.7rem;
+    color: var(--ink-faint);
+    margin-top: 0.2rem;
+  }
+
+  .empty {
+    font-family: var(--font-sans);
+    color: var(--ink-faint);
+    padding-block: 2rem;
+  }
+</style>

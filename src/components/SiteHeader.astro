@@ -1,0 +1,138 @@
+---
+import LanguageSwitcher from './LanguageSwitcher.astro';
+import { SECTIONS, type Locale, type Section } from '~/i18n/config';
+import { homePath, sectionPath } from '~/i18n/paths';
+import { useTranslations } from '~/i18n/ui';
+import type { PageRef } from '~/i18n/page-ref';
+
+interface Props {
+  locale: Locale;
+  page: PageRef;
+  current: Section | 'home';
+}
+
+const { locale, page, current } = Astro.props;
+const t = useTranslations(locale);
+
+const links = SECTIONS.map((section) => ({
+  section,
+  href: sectionPath(locale, section),
+  label: t.nav[section],
+}));
+---
+
+<header class="header">
+  <div class="header__inner shell">
+    <a class="brand" href={homePath(locale)} aria-current={current === 'home' ? 'page' : undefined}>
+      <span class="brand__name">{t.site.name}</span>
+      <span class="brand__role">{t.site.role}</span>
+    </a>
+
+    <nav class="nav" aria-label={t.a11y.mainNav}>
+      <ul>
+        {
+          links.map((link) => (
+            <li>
+              <a href={link.href} aria-current={current === link.section ? 'page' : undefined}>
+                {link.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <LanguageSwitcher locale={locale} page={page} />
+  </div>
+</header>
+
+<style>
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: saturate(140%) blur(10px);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .header__inner {
+    display: flex;
+    align-items: center;
+    gap: clamp(1rem, 3vw, 2.5rem);
+    padding-block: 0.75rem;
+  }
+
+  .brand {
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    line-height: 1.2;
+    margin-inline-end: auto;
+  }
+
+  .brand__name {
+    font-size: 1.02rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .brand__role {
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  .nav ul {
+    display: flex;
+    gap: clamp(0.8rem, 2vw, 1.75rem);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .nav a {
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    text-decoration: none;
+    color: var(--ink-soft);
+    padding-block: 0.35rem;
+    border-bottom: 1.5px solid transparent;
+    transition: color 160ms var(--ease), border-color 160ms var(--ease);
+  }
+
+  .nav a:hover {
+    color: var(--ink);
+  }
+
+  .nav a[aria-current='page'] {
+    color: var(--ink);
+    border-bottom-color: var(--accent);
+  }
+
+  /* Below the fold on phones the nav wraps under the brand rather than
+     collapsing into a hamburger: three links do not justify a menu. */
+  @media (max-width: 40rem) {
+    .header__inner {
+      flex-wrap: wrap;
+      row-gap: 0.5rem;
+    }
+
+    .brand {
+      margin-inline-end: auto;
+    }
+
+    .nav {
+      order: 3;
+      width: 100%;
+      border-top: 1px solid var(--rule);
+      padding-top: 0.5rem;
+    }
+
+    .nav ul {
+      justify-content: space-between;
+    }
+  }
+</style>

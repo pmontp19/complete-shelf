@@ -1,0 +1,70 @@
+---
+/**
+ * Root entry point. Astro emits a static file here, so language negotiation
+ * happens on the client. Everything degrades to a plain list of links.
+ */
+import { LOCALES, LOCALE_NAMES, DEFAULT_LOCALE } from '~/i18n/config';
+import { homePath } from '~/i18n/paths';
+
+const defaultHref = homePath(DEFAULT_LOCALE);
+const map = Object.fromEntries(LOCALES.map((code) => [code, homePath(code)]));
+---
+
+<!doctype html>
+<html lang="ca">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Judith Raigal Aran — Traductora literària</title>
+    <meta name="robots" content="noindex,follow" />
+    <link rel="canonical" href={defaultHref} />
+    <meta http-equiv="refresh" content={`0; url=${defaultHref}`} />
+    <script is:inline define:vars={{ map, defaultHref }}>
+      // Prefer the visitor's own language over the default locale.
+      const preferred = (navigator.languages || [navigator.language || 'ca'])
+        .map((tag) => String(tag).toLowerCase().split('-')[0])
+        .find((code) => code in map);
+      window.location.replace(preferred ? map[preferred] : defaultHref);
+    </script>
+    <style>
+      /* Normally invisible — JS or the meta refresh moves on immediately. It
+         still gets a dark variant so a JS-blocked visitor is not flashed. */
+      :root {
+        color-scheme: light dark;
+      }
+      body {
+        font-family: Georgia, 'Times New Roman', serif;
+        background: #f7f3ec;
+        color: #1e1a16;
+        display: grid;
+        place-content: center;
+        min-height: 100vh;
+        margin: 0;
+        text-align: center;
+        gap: 1rem;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #16130f;
+          color: #f2ece2;
+        }
+      }
+      ul {
+        display: flex;
+        gap: 1rem;
+        list-style: none;
+        padding: 0;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Judith Raigal Aran</h1>
+    <nav>
+      <ul>
+        {LOCALES.map((code) => <li><a href={homePath(code)}>{LOCALE_NAMES[code]}</a></li>)}
+      </ul>
+    </nav>
+  </body>
+</html>

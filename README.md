@@ -1,77 +1,107 @@
-# The Complete Shelf
+# Judith Raigal Aran — literary translator
 
-An original, interactive Three.js library of seven clothbound hardcovers. Browse the continuous shelf, pull a volume into a responsive detail view, orbit the binding, and drag through a small set of physically curved pages.
+The personal site of [Judith Raigal Aran](https://www.deaa.urv.cat/ca/departament/staff/raigal/), a
+Catalan literary translator working from English, German and French into Catalan and Spanish. The
+home page is an interactive 3D shelf holding every book she has translated, each volume carrying its
+real published cover.
 
-[**View the live experience**](https://mengto.github.io/complete-shelf/) · [**Read the build prompt**](PROMPT.md)
+Built with [Astro](https://astro.build/) and [three.js](https://threejs.org/). Static output, five
+languages, no backend and no third-party requests at runtime.
 
-![The Complete Shelf with seven clothbound volumes](assets/complete-shelf-preview.jpg)
+## What is here
 
-The collection is organized around seven tools for modern creative work:
-
-1. Codex
-2. Claude Code
-3. Cursor
-4. Antigravity
-5. Figma
-6. Framer
-7. Xcode
-
-## What is inside
-
-- A continuous seven-volume shelf navigated with the wheel, arrow keys, buttons, or position markers.
-- Detailed hardcover construction with separate boards, spine, hinges, endpapers, page block, headbands, bookmark, foil, and contact shadows.
-- Responsive inspection mode with orbit, pan, zoom, hover-to-crack-open, click-to-open, and drag-to-turn page interactions.
-- Book-specific color systems that recolor the scene and editorial detail layout.
-- Procedural cloth, foil, paper, page-edge, wood, roughness, normal, and shadow textures.
-- Deterministic shelf-to-detail transitions with exact endpoints so reparenting the selected volume never produces a last-frame jump.
-- Accessible HTML controls and status announcements layered over the WebGL scene.
-
-## How it is made
-
-The entire experience lives in [`index.html`](index.html): markup, responsive layout, shaders and materials, book geometry, interaction state, animation, and embedded image atlases. There is no framework, bundler, backend, analytics layer, Mint dependency, or MCP call in the browser.
-
-The render stack uses [Three.js](https://threejs.org/) with physically based materials and `OrbitControls`. Cover and wood artwork are stored as embedded WebP atlases; supporting surface detail is generated at runtime with canvas textures. Each book is assembled from reusable geometry, while the front cover and pages use hinged groups and segmented meshes for curved page-turn motion.
-
-Interaction is managed as a small state machine:
-
-```text
-shelf -> opening detail -> closed inspection -> open book -> closing -> shelf
-```
-
-Camera, book, shelf, and view-offset transforms share deterministic eased timelines. This keeps the animation continuous when a book moves between the shelf and inspection scene graphs.
-
-## Build or remix it with an agent
-
-Start from [`PROMPT.md`](PROMPT.md), attach a visual reference if you have one, and ask your preferred coding agent to work directly in `index.html`.
-
-- [**Codex**](https://openai.com/codex/get-started/) — work in the repository, run the local site, inspect interactions, and iterate against browser proof.
-- [**Cursor**](https://www.cursor.com/) — open the folder, give Agent the prompt, and review changes in the editor.
-- [**Claude Code**](https://claude.com/product/claude-code) — run Claude in the project directory and point it at the prompt and HTML file.
-- [**Aura Build**](https://aura.build) — use the prompt and screenshots as a starting point for a visual build or remix.
-
-Whichever tool you use, the useful loop is the same: make one focused change, run the page, verify the real interaction, inspect the console, and keep only the revision that improves the experience.
-
-## Run locally
-
-The page uses JavaScript modules, so serve it over HTTP instead of opening it directly from disk:
-
-```bash
-python3 -m http.server 4173
-```
-
-Then visit [http://localhost:4173](http://localhost:4173).
-
-No install or build step is required. An internet connection is needed for the pinned Three.js modules and Inter font.
+- **A WebGL shelf** of 22 hardcovers on the home page. Browse with the wheel, the arrow keys, the
+  previous/next buttons or by clicking a spine; the centred volume turns to face you and the page
+  tints to its cover palette. Clicking it opens the book's record. There is no page-turning: this is
+  a bibliography, not a reader.
+- **Five languages** — Catalan (default), Spanish, English, German and French — with localised URL
+  segments (`/ca/traduccions/`, `/de/uebersetzungen/`, …), `hreflang` alternates on every page, and a
+  language switcher that keeps you on the page you were reading.
+- **A record per translation**: original title and author, publisher, year, ISBN, page count,
+  co-translators, a synopsis in the reader's language, and the sources that verify the credit.
+- **Progressive enhancement.** Without JavaScript, or without WebGL, the shelf is replaced by a
+  complete cover grid. Nothing is only reachable through the 3D scene.
 
 ## Project structure
 
 ```text
-complete-shelf/
-├── index.html   # Complete production experience
-├── PROMPT.md    # Portable recreation and remix brief
-└── README.md    # Project overview and implementation notes
+├── astro.config.mjs        # locales, base path, static output
+├── scripts/                # asset pipeline (see scripts/README.md)
+│   ├── build-covers-input.mjs
+│   ├── fetch-covers.mjs    # download + resize covers, extract palettes
+│   ├── merge-synopses.mjs
+│   └── build-og.mjs        # social preview card
+├── public/covers/          # committed .webp covers (800px + 320px thumb)
+└── src/
+    ├── data/
+    │   ├── books.json      # the bibliography — the single source of truth
+    │   ├── cover-sources.json
+    │   ├── cover-meta.json # generated: per-cover palette
+    │   ├── books.ts        # typed loader, sorting, helpers
+    │   └── profile.ts      # biography, timeline and links, in five languages
+    ├── i18n/               # locales, localised routes, UI dictionaries
+    ├── lib/shelf/          # the three.js shelf, dependency-free
+    ├── components/
+    ├── layouts/
+    └── pages/
 ```
 
-## Design notes
+## Running it
 
-The visual direction studies the clarity, material craft, and book photography of contemporary editorial publishers, including [Stripe Press](https://press.stripe.com/), while using original book titles, cover artwork, textures, layouts, and interaction design. This project is independent and is not affiliated with Stripe Press or the products represented by the seven volumes.
+```bash
+npm install
+npm run dev        # http://localhost:4321/complete-shelf/
+npm run build      # type-checks, then writes dist/
+npm run preview
+npm test           # drives the built site in Chromium (needs `npm run preview` running)
+```
+
+Needs Node 22.12 or newer — Astro 6 dropped Node 18 and 20.
+
+`npm run build` runs `astro check` first, so a broken translation key or a malformed book record
+fails the build rather than shipping.
+
+On Astro 7 `astro dev` starts a managed background daemon rather than holding the terminal;
+`npm run astro dev stop`, `… dev status` and `… dev logs` control it.
+
+## Adding or editing a translation
+
+1. Add the record to `src/data/books.json`. `id` becomes the URL slug; `sources` should hold the
+   publisher or retailer pages that name her as translator.
+2. If you have the publisher's cover URL, add it to `src/data/cover-sources.json` under the same id.
+3. Run `npm run assets`. This downloads the cover, writes `public/covers/<id>.webp` and a thumbnail,
+   extracts a spine colour and a readable foreground into `src/data/cover-meta.json`, and regenerates
+   the social card. Books without a resolvable cover get a typographic one generated for them, so
+   the shelf never has a hole in it.
+4. Synopses live in the record's `synopsis` object, keyed by locale. Missing locales fall back
+   through Catalan → Spanish → English rather than rendering empty.
+
+Everything else — the catalogue, the filters, the shelf, the sitemap, the five language versions —
+derives from that one record.
+
+## Deployment
+
+`.github/workflows/deploy.yml` builds and publishes to GitHub Pages on every push to `main`. The
+covers are committed, so the build needs no network access.
+
+### Publishing on her own domain
+
+`site` and `base` are read from the environment, so moving to `judithraigal.com` needs no source
+change:
+
+```bash
+SITE_URL=https://judithraigal.com SITE_BASE=/ npm run build
+```
+
+Canonicals, `hreflang` alternates, the sitemap, `robots.txt` and every internal link and image path
+follow automatically. To make it the default, set those two variables in the workflow's `build` step
+and add a `public/CNAME` file containing the bare domain.
+
+## About the data
+
+The bibliography was compiled from the publisher's own catalogue (grup62.cat, for the Columna and
+Edicions 62 imprints) and cross-checked against Open Library, todostuslibros, Fnac, Casa del Libro
+and Agapea. Every entry links its sources from the book's page.
+
+Cover images are reproduced from the publishers' own artwork and are shown for bibliographic
+identification only; they remain the property of the respective publishers.
