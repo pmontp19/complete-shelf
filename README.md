@@ -116,8 +116,15 @@ and add a `public/CNAME` file containing the bare domain.
 ## About the data
 
 The bibliography was compiled from the publisher's own catalogue (grup62.cat, for the Columna and
-Edicions 62 imprints) and cross-checked against Open Library, todostuslibros, Fnac, Casa del Libro
-and Agapea. Every entry links its sources from the book's page.
+Edicions 62 imprints) and cross-checked against todostuslibros (CEGAL), Open Library and the
+Catalan public library catalogue. Every title carries two sources: the publisher's record, which
+names her in its `Traductora` field, and the todostuslibros record for the same ISBN. Both were
+re-checked in August 2026, and each of the 22 credits was confirmed on the publisher's page.
+Retailer links were dropped in favour of those two — product pages churn, catalogue records do not.
+
+The research list is kept in step with her [ORCID record](https://orcid.org/0000-0002-0387-0867)
+and her Dialnet author records, which between them cover the journal articles, book chapters,
+reports and the thesis.
 
 Cover images are reproduced from the publishers' own artwork and are shown for bibliographic
 identification only; they remain the property of the respective publishers.
