@@ -118,11 +118,28 @@ covers are committed, so the build needs no network access.
 
 Detected automatically. Vercel serves the build at the domain root, so the
 GitHub Pages sub-path is dropped there (`base: '/'`) and `site` is taken from
-`VERCEL_PROJECT_PRODUCTION_URL`. Nothing to configure; `vercel.json` just pins
-the framework preset, the output directory and trailing slashes.
+`VERCEL_PROJECT_PRODUCTION_URL`. Nothing to configure; `vercel.json` pins the
+framework preset, the output directory and trailing slashes.
 
 Without this the site 404s on Vercel: every asset and link would be requested
 under `/complete-shelf/`, which only exists on GitHub Pages.
+
+`vercel.json` also redirects `/` to `/ca/` with a real 308. Every page lives
+under a locale segment, so the bare domain is a redirect wherever it is served —
+the question is only what answers it. Vercel has a server, so it answers with a
+status code and no body: nothing renders and nothing flashes, and the weight of
+the URL people type and link to consolidates onto `/ca/`, which the sitemap and
+every `hreflang` set already name as `x-default`.
+
+[`src/pages/index.astro`](src/pages/index.astro) is the fallback for hosts that
+cannot redirect at all, GitHub Pages among them: an immediate `<meta
+http-equiv="refresh">`, `noindex,follow`, an absolute canonical, client-side
+language negotiation so a German visitor lands on `/de/`, and a plain list of the
+five locales for anyone who has neither the refresh nor JavaScript. It only ships
+because `routing.redirectToDefaultLocale` is off — with it on, Astro overwrites
+that page with a bare *two-second* refresh of its own, unstyled and with no
+negotiation, which is what the root used to serve. `npm test` checks the root for
+exactly that regression.
 
 ### Publishing on her own domain
 

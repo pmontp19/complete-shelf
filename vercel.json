@@ -3,5 +3,6 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "astro",
-  "trailingSlash": true
+  "trailingSlash": true,
+  "redirects": [{ "source": "/", "destination": "/ca/", "permanent": true }]
 }

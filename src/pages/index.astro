@@ -1,13 +1,30 @@
 ---
 /**
- * Root entry point. Astro emits a static file here, so language negotiation
- * happens on the client. Everything degrades to a plain list of links.
+ * Root entry point. Every page lives under a locale segment, so the bare domain
+ * is always a redirect.
+ *
+ * On a host with a server this file is never reached: Vercel answers `/` with a
+ * real 308 to the default locale (see vercel.json), which is both instant and
+ * the version that consolidates the root URL's weight onto /ca/. This is the
+ * fallback for hosts that cannot redirect at all — GitHub Pages — where it is
+ * also the only chance to send a visitor to their own language. It redirects
+ * immediately; the markup below is only ever seen if both the meta refresh and
+ * JavaScript are unavailable, and then it is a usable list of links rather than
+ * a dead end.
+ *
+ * `astro.config.mjs` has to keep `redirectToDefaultLocale: false` for any of
+ * this to ship: with it on, Astro overwrites this page with a bare two-second
+ * refresh of its own.
  */
 import { LOCALES, LOCALE_NAMES, DEFAULT_LOCALE } from '~/i18n/config';
 import { homePath } from '~/i18n/paths';
 
 const defaultHref = homePath(DEFAULT_LOCALE);
 const map = Object.fromEntries(LOCALES.map((code) => [code, homePath(code)]));
+
+// Absolute, like every other canonical on the site: a relative one is legal but
+// is resolved against whatever host served the page, mirrors included.
+const canonical = new URL(defaultHref, Astro.site ?? Astro.url.origin).href;
 ---
 
 <!doctype html>
@@ -17,7 +34,7 @@ const map = Object.fromEntries(LOCALES.map((code) => [code, homePath(code)]));
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Judith Raigal Aran — Traductora literària</title>
     <meta name="robots" content="noindex,follow" />
-    <link rel="canonical" href={defaultHref} />
+    <link rel="canonical" href={canonical} />
     <meta http-equiv="refresh" content={`0; url=${defaultHref}`} />
     <script is:inline define:vars={{ map, defaultHref }}>
       // Prefer the visitor's own language over the default locale.

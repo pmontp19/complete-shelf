@@ -36,7 +36,13 @@ export default defineConfig({
     locales: ['ca', 'es', 'en', 'de', 'fr'],
     routing: {
       prefixDefaultLocale: true,
-      redirectToDefaultLocale: true,
+      // Off, because Astro's own root redirect shadowed src/pages/index.astro
+      // with a bare `<meta http-equiv="refresh" content="2;url=/ca/">` page —
+      // two seconds of unstyled "Redirecting from / to /ca/" before anything
+      // happened, and no language negotiation. Ours redirects immediately, and
+      // on hosts that cannot redirect at the server (GitHub Pages) it is the
+      // only chance to send a German visitor to /de/ rather than to /ca/.
+      redirectToDefaultLocale: false,
     },
   },
   vite: {

@@ -279,6 +279,29 @@ for (const path of ['sitemap.xml', 'robots.txt', '404.html', 'og-default.png', '
   else ok(path);
 }
 
+// The bare root. Astro will happily overwrite src/pages/index.astro with a bare
+// two-second refresh of its own if `redirectToDefaultLocale` is ever switched
+// back on, and nothing else here would notice: the page it replaces it with is
+// still technically a redirect. Hosts with a server never serve this file at all
+// (Vercel answers with a 308), so this is the GitHub Pages path.
+{
+  const res = await fetch(`${BASE}/`, { redirect: 'manual' }).catch(() => null);
+  const html = (await res?.text().catch(() => '')) ?? '';
+  const refresh = html.match(/http-equiv="refresh" content="(\d+)/i)?.[1];
+  if (!res?.ok) fail(`/ not served (${res?.status ?? 'no response'})`);
+  else if (refresh === undefined) fail('/ carries no meta refresh to a locale');
+  else if (Number(refresh) > 0) fail(`/ waits ${refresh}s before redirecting`);
+  else if (!/rel="canonical" href="https?:\/\//.test(html)) {
+    fail('/ has no absolute canonical');
+  } else if (
+    !['ca', 'es', 'en', 'de', 'fr'].every((loc) =>
+      html.includes(`href="${new URL(BASE).pathname.replace(/\/$/, '')}/${loc}/"`),
+    )
+  ) {
+    fail('/ does not list every locale as a fallback link');
+  } else ok('/ redirects immediately and lists all five locales');
+}
+
 await browser.close();
 
 console.log(`\n${'='.repeat(60)}`);
