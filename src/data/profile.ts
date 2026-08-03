@@ -99,7 +99,7 @@ export interface Profile {
    */
   verifiedOn: string;
   /**
-   * Portrait shown on the biography page. Left null until she supplies one —
+   * Portrait shown on the biography page. Null when she has not supplied one —
    * the layout simply drops the column rather than showing a placeholder.
    */
   portrait: { src: string; width: number; height: number } | null;
@@ -197,7 +197,7 @@ export const PROFILE: Profile = {
       independent: true,
     },
   ],
-  portrait: null,
+  portrait: { src: 'portrait.webp', width: 800, height: 1000 },
   // Published on her URV departmental staff page; the only contact channel used here.
   email: 'judith.raigal@urv.cat',
   location: {
