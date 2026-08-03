@@ -18,7 +18,7 @@ const SHORT: Record<Locale, string> = { ca: 'CA', es: 'ES', en: 'EN', de: 'DE', 
 ---
 
 <nav class="langs" aria-label={t.a11y.languageSwitcher}>
-  <ul>
+  <ul class="flex items-center gap-[0.15rem]">
     {
       LOCALES.map((code) => {
         const isCurrent = code === locale;
@@ -30,7 +30,10 @@ const SHORT: Record<Locale, string> = { ca: 'CA', es: 'ES', en: 'EN', de: 'DE', 
               lang={LOCALE_TAGS[code]}
               aria-current={isCurrent ? 'page' : undefined}
               aria-label={isCurrent ? `${t.a11y.currentLanguage}: ${LOCALE_NAMES[code]}` : LOCALE_NAMES[code]}
-              class:list={['lang', { 'lang--current': isCurrent }]}
+              class:list={[
+                'block rounded px-[0.45rem] py-[0.3rem] font-sans text-[0.72rem] font-medium tracking-[0.08em] text-ink-faint no-underline transition-colors duration-[160ms] ease-brand hover:bg-paper-sunk hover:text-ink',
+                { 'bg-paper-sunk font-[650] text-ink': isCurrent },
+              ]}
             >
               <span aria-hidden="true">{SHORT[code]}</span>
             </a>
@@ -40,38 +43,3 @@ const SHORT: Record<Locale, string> = { ca: 'CA', es: 'ES', en: 'EN', de: 'DE', 
     }
   </ul>
 </nav>
-
-<style>
-  .langs ul {
-    display: flex;
-    align-items: center;
-    gap: 0.15rem;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-
-  .lang {
-    display: block;
-    padding: 0.3rem 0.45rem;
-    font-family: var(--font-sans);
-    font-size: 0.72rem;
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    color: var(--ink-faint);
-    text-decoration: none;
-    border-radius: var(--radius);
-    transition: color 160ms var(--ease), background 160ms var(--ease);
-  }
-
-  .lang:hover {
-    color: var(--ink);
-    background: var(--paper-sunk);
-  }
-
-  .lang--current {
-    color: var(--ink);
-    font-weight: 650;
-    background: var(--paper-sunk);
-  }
-</style>

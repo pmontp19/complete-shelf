@@ -1,5 +1,6 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
+import tailwindcss from '@tailwindcss/vite';
 
 /**
  * Where the site will live. Vercel injects its own domain, so nothing needs
@@ -49,6 +50,7 @@ export default defineConfig({
     },
   },
   vite: {
+    plugins: [tailwindcss()],
     build: {
       // three.js is large; keep it in its own chunk so the rest of the site stays light.
       chunkSizeWarningLimit: 900,

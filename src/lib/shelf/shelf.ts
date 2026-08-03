@@ -316,7 +316,7 @@ export const mountShelf: MountShelf = async (container, options) => {
   const reducedMotionForced = options.reducedMotion !== undefined;
   let reducedMotion = options.reducedMotion ?? reducedMotionQuery.matches;
   let darkScheme = darkSchemeQuery.matches;
-  let paperColor = readCssColor(document.documentElement, '--paper', '#f7f3ec');
+  let paperColor = readCssColor(document.documentElement, '--color-paper', '#f7f3ec');
 
   /** Wraps a slot index into `[0, total)`. */
   const wrapIndex = (index: number): number =>
@@ -672,7 +672,7 @@ export const mountShelf: MountShelf = async (container, options) => {
 
   /** Retints without moving, e.g. after the colour scheme flips. */
   function refreshTheme(): void {
-    paperColor = readCssColor(document.documentElement, '--paper', '#f7f3ec');
+    paperColor = readCssColor(document.documentElement, '--color-paper', '#f7f3ec');
     const palette = themePalette(
       paperColor,
       books[currentIndex]?.spineColor ?? '#6b5a45',

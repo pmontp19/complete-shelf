@@ -60,6 +60,8 @@ const rows: Array<{ label: string; value: string }> = [
 ];
 
 const bookSchema = bookNode(book, locale, Astro.site ?? new URL(Astro.url.origin));
+
+const titleVtClass = '[view-transition-class:vt-title]';
 ---
 
 <BaseLayout
@@ -81,23 +83,36 @@ const bookSchema = bookNode(book, locale, Astro.site ?? new URL(Astro.url.origin
     <meta property="book:release_date" content={String(book.year)} />
   </Fragment>
 
-  <nav class="crumb">
-    <a class="link-arrow crumb__link" href={sectionPath(locale, 'works')}>
-      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" class="crumb__arrow">
+  <nav class="flex items-baseline justify-between gap-4 pt-[clamp(1.5rem,4vw,2.5rem)]">
+    <a class="link-arrow group border-b-transparent text-ink-faint hover:text-ink" href={sectionPath(locale, 'works')}>
+      <svg
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+        focusable="false"
+        class="group-hover:-translate-x-[0.2em]"
+      >
         <path d="M19 12H6m5-6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.5" />
       </svg>
       {t.book.back}
     </a>
-    <span class="crumb__no" aria-hidden="true">{catalogueNumber} / {ALL_BOOKS.length}</span>
+    <span class="font-sans text-[0.7rem] tracking-[0.14em] text-ink-faint tabular-nums" aria-hidden="true">
+      {catalogueNumber} / {ALL_BOOKS.length}
+    </span>
   </nav>
 
-  <article class="book" data-reveal>
-    <div class="book__cover">
+  <article
+    class="grid items-start gap-[clamp(2rem,5vw,4rem)] py-[clamp(1.5rem,4vw,3rem)] min-[52rem]:grid-cols-[minmax(13rem,22rem)_minmax(0,1.5fr)]"
+    data-reveal
+  >
+    <div
+      class="relative rounded bg-paper-sunk bg-[radial-gradient(120%_90%_at_50%_100%,color-mix(in_srgb,var(--tint)_16%,transparent),transparent_70%)] p-[clamp(1.25rem,3vw,2.25rem)]"
+    >
       {/* The names pair this cover and heading with the same volume's card in
           the catalogue, so the browser moves them across the navigation rather
           than fading the whole page. Per book, because the catalogue holds all
           22 at once and a view transition name has to be unique in a document. */}
       <img
+        class="w-full rounded-[2px] shadow-[0_4px_10px_rgb(30_26_22/0.12),0_26px_60px_color-mix(in_srgb,var(--tint)_30%,transparent)] [view-transition-class:vt-cover]"
         src={coverFor(book.id)}
         width={cover.width}
         height={cover.height}
@@ -107,13 +122,15 @@ const bookSchema = bookNode(book, locale, Astro.site ?? new URL(Astro.url.origin
       />
     </div>
 
-    <div class="book__body">
+    <div>
       <p class="eyebrow">{book.publisher} · {book.year}</p>
-      <h1 style={`view-transition-name:title-${book.id}`}>{book.title}</h1>
-      <p class="book__author">{book.author}</p>
+      <h1 class={`mb-[0.15em] ${titleVtClass}`} style={`view-transition-name:title-${book.id}`}>
+        {book.title}
+      </h1>
+      <p class="mb-[0.35em] text-[1.15rem] text-ink-soft">{book.author}</p>
       {/* Label-free on purpose: the `from`/`into` labels are nouns now, so an
           arrow reads better here than "Source language Deutsch". */}
-      <p class="book__original">
+      <p class="mb-8 font-sans text-[0.82rem] text-ink-faint">
         <i>{book.originalTitle}</i> · {t.languages[book.originalLanguage]} → {
           t.languages[book.targetLanguage]
         }
@@ -121,20 +138,22 @@ const bookSchema = bookNode(book, locale, Astro.site ?? new URL(Astro.url.origin
 
       {
         synopsis && (
-          <div class="book__synopsis">
+          <div>
             <h2 class="visually-hidden">{t.book.synopsis}</h2>
-            <p>{synopsis}</p>
+            <p class="text-[1.06em]">{synopsis}</p>
           </div>
         )
       }
 
-      <h2 class="book__details-heading">{t.book.details}</h2>
-      <dl class="book__details">
+      <h2 class="mt-10 border-t border-rule pt-5 font-sans text-[0.72rem] font-semibold tracking-[0.14em] text-ink-faint uppercase">
+        {t.book.details}
+      </h2>
+      <dl class="book__details m-0 grid grid-cols-[repeat(auto-fit,minmax(min(100%,11rem),1fr))] gap-x-8 gap-y-4">
         {
           rows.map((row) => (
             <div>
-              <dt>{row.label}</dt>
-              <dd>{row.value}</dd>
+              <dt class="font-sans text-[0.72rem] tracking-[0.12em] text-ink-faint uppercase">{row.label}</dt>
+              <dd class="mt-[0.1rem] text-[0.95rem] tabular-nums">{row.value}</dd>
             </div>
           ))
         }
@@ -142,9 +161,9 @@ const bookSchema = bookNode(book, locale, Astro.site ?? new URL(Astro.url.origin
 
       {
         book.sources.length > 0 && (
-          <details class="book__sources">
-            <summary>{t.book.sources} · {book.sources.length}</summary>
-            <ul>
+          <details class="mt-8 font-sans text-[0.78rem] text-ink-faint">
+            <summary class="cursor-pointer">{t.book.sources} · {book.sources.length}</summary>
+            <ul class="mt-[0.6rem] grid gap-[0.25rem] ps-[1.1rem]">
               {book.sources.map((href) => (
                 <li>
                   <a href={href} rel="nofollow noopener" target="_blank">
@@ -159,27 +178,39 @@ const bookSchema = bookNode(book, locale, Astro.site ?? new URL(Astro.url.origin
     </div>
   </article>
 
-  <nav class="pager" aria-label={t.works.title}>
+  <nav class="grid grid-cols-2 gap-4 border-t border-rule pt-8 pb-4" aria-label={t.works.title}>
     {
       previous ? (
-        <a class="pager__link" href={bookPath(locale, previous.id)} rel="prev">
-          <span class="pager__label">← {t.book.previous}</span>
+        <a
+          class="grid gap-[0.15rem] py-4 text-ink no-underline transition-colors duration-200 ease-brand hover:text-[var(--tint)]"
+          href={bookPath(locale, previous.id)}
+          rel="prev"
+        >
+          <span class="font-sans text-[0.7rem] tracking-[0.1em] text-ink-faint uppercase">
+            ← {t.book.previous}
+          </span>
           {/* Named after the volume it leads to, so walking the catalogue with
               the pager carries the title up into the next page's heading. */}
-          <span class="pager__title" style={`view-transition-name:title-${previous.id}`}>
+          <span class={`leading-[1.3] font-semibold ${titleVtClass}`} style={`view-transition-name:title-${previous.id}`}>
             {previous.title}
           </span>
         </a>
       ) : (
         // Holds the first grid column so a lone "next" link stays right-aligned.
-        <span></span>
+        <span />
       )
     }
     {
       next && (
-        <a class="pager__link pager__link--next" href={bookPath(locale, next.id)} rel="next">
-          <span class="pager__label">{t.book.next} →</span>
-          <span class="pager__title" style={`view-transition-name:title-${next.id}`}>
+        <a
+          class="grid gap-[0.15rem] py-4 text-end text-ink no-underline transition-colors duration-200 ease-brand hover:text-[var(--tint)]"
+          href={bookPath(locale, next.id)}
+          rel="next"
+        >
+          <span class="font-sans text-[0.7rem] tracking-[0.1em] text-ink-faint uppercase">
+            {t.book.next} →
+          </span>
+          <span class={`leading-[1.3] font-semibold ${titleVtClass}`} style={`view-transition-name:title-${next.id}`}>
             {next.title}
           </span>
         </a>
@@ -187,188 +218,3 @@ const bookSchema = bookNode(book, locale, Astro.site ?? new URL(Astro.url.origin
     }
   </nav>
 </BaseLayout>
-
-<style>
-  .crumb {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 1rem;
-    padding-top: clamp(1.5rem, 4vw, 2.5rem);
-  }
-
-  .crumb__link {
-    color: var(--ink-faint);
-    border-bottom-color: transparent;
-  }
-
-  .crumb__link:hover {
-    color: var(--ink);
-  }
-
-  /* The arrow points back, so it should walk back on hover. */
-  .crumb__link:hover .crumb__arrow {
-    transform: translateX(-0.2em);
-  }
-
-  .crumb__no {
-    font-family: var(--font-sans);
-    font-size: 0.7rem;
-    letter-spacing: 0.14em;
-    font-variant-numeric: tabular-nums;
-    color: var(--ink-faint);
-  }
-
-  .book {
-    display: grid;
-    gap: clamp(2rem, 5vw, 4rem);
-    align-items: start;
-    padding-block: clamp(1.5rem, 4vw, 3rem);
-  }
-
-  @media (min-width: 52rem) {
-    .book {
-      grid-template-columns: minmax(13rem, 22rem) minmax(0, 1.5fr);
-    }
-  }
-
-  .book__cover {
-    position: relative;
-    padding: clamp(1.25rem, 3vw, 2.25rem);
-    background:
-      radial-gradient(
-        120% 90% at 50% 100%,
-        color-mix(in srgb, var(--tint) 16%, transparent),
-        transparent 70%
-      ),
-      var(--paper-sunk);
-    border-radius: var(--radius);
-  }
-
-  /* The transition *name* is per book, so it is set inline above; the *class* is
-     what the rules in global.css hang off and is the same for every volume. */
-  .book__body h1,
-  .pager__title {
-    view-transition-class: vt-title;
-  }
-
-  .book__cover img {
-    view-transition-class: vt-cover;
-    width: 100%;
-    /* The intrinsic ratio comes from the width/height attributes above, which
-       are the file's real dimensions — covers are not all 2:3. */
-    height: auto;
-    border-radius: 2px;
-    box-shadow: 0 4px 10px rgb(30 26 22 / 0.12), 0 26px 60px
-      color-mix(in srgb, var(--tint) 30%, transparent);
-  }
-
-  .book__body h1 {
-    margin-bottom: 0.15em;
-  }
-
-  .book__author {
-    font-size: 1.15rem;
-    color: var(--ink-soft);
-    margin-bottom: 0.35em;
-  }
-
-  .book__original {
-    font-family: var(--font-sans);
-    font-size: 0.82rem;
-    color: var(--ink-faint);
-    margin-bottom: 2rem;
-  }
-
-  .book__synopsis p {
-    font-size: 1.06em;
-  }
-
-  .book__details-heading {
-    font-family: var(--font-sans);
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--ink-faint);
-    margin-top: 2.5rem;
-    padding-top: 1.25rem;
-    border-top: 1px solid var(--rule);
-  }
-
-  .book__details {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
-    gap: 1rem 2rem;
-    margin: 0;
-  }
-
-  .book__details dt {
-    font-family: var(--font-sans);
-    font-size: 0.72rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--ink-faint);
-  }
-
-  .book__details dd {
-    margin: 0.1rem 0 0;
-    font-size: 0.95rem;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .book__sources {
-    margin-top: 2rem;
-    font-family: var(--font-sans);
-    font-size: 0.78rem;
-    color: var(--ink-faint);
-  }
-
-  .book__sources summary {
-    cursor: pointer;
-  }
-
-  .book__sources ul {
-    margin: 0.6rem 0 0;
-    padding-inline-start: 1.1rem;
-    display: grid;
-    gap: 0.25rem;
-  }
-
-  .pager {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    padding-block: 2rem 1rem;
-    border-top: 1px solid var(--rule);
-  }
-
-  .pager__link {
-    display: grid;
-    gap: 0.15rem;
-    text-decoration: none;
-    padding: 1rem 0;
-    transition: color 200ms var(--ease);
-  }
-
-  .pager__link:hover {
-    color: var(--tint);
-  }
-
-  .pager__link--next {
-    text-align: end;
-  }
-
-  .pager__label {
-    font-family: var(--font-sans);
-    font-size: 0.7rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--ink-faint);
-  }
-
-  .pager__title {
-    font-weight: 600;
-    line-height: 1.3;
-  }
-</style>

@@ -14,6 +14,10 @@
  * `astro.config.mjs` has to keep `redirectToDefaultLocale: false` for any of
  * this to ship: with it on, Astro overwrites this page with a bare two-second
  * refresh of its own.
+ *
+ * Self-contained on purpose, like 404.astro: no import of `global.css` (and so
+ * no Tailwind stylesheet either), so this still looks like the site even if a
+ * broken deploy is the reason JavaScript never runs.
  */
 import { LOCALES, LOCALE_NAMES, DEFAULT_LOCALE } from '~/i18n/config';
 import { homePath } from '~/i18n/paths';

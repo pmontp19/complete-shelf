@@ -21,19 +21,39 @@ const links = SECTIONS.map((section) => ({
 }));
 ---
 
-<header class="header">
-  <div class="header__inner shell">
-    <a class="brand" href={homePath(locale)} aria-current={current === 'home' ? 'page' : undefined}>
-      <span class="brand__name">{t.site.name}</span>
-      <span class="brand__role">{t.site.role}</span>
+<header
+  class:list={[
+    'header sticky top-0 z-20 border-b border-rule backdrop-blur-[10px] backdrop-saturate-[1.4]',
+    'bg-[color-mix(in_srgb,var(--color-paper)_88%,transparent)]',
+  ]}
+>
+  <div
+    class="shell flex flex-wrap items-center gap-x-[clamp(1rem,3vw,2.5rem)] gap-y-[0.35rem] py-2 sm:flex-nowrap sm:gap-y-[clamp(1rem,3vw,2.5rem)] sm:py-3"
+  >
+    <a
+      class="me-auto flex flex-col leading-[1.15] no-underline sm:leading-[1.2]"
+      href={homePath(locale)}
+      aria-current={current === 'home' ? 'page' : undefined}
+    >
+      <span class="text-[0.95rem] font-semibold tracking-[-0.01em] sm:text-[1.02rem]">{t.site.name}</span>
+      <span class="font-sans text-[0.62rem] tracking-[0.13em] text-ink-faint uppercase sm:text-[0.72rem]">
+        {t.site.role}
+      </span>
     </a>
 
-    <nav class="nav" aria-label={t.a11y.mainNav}>
-      <ul>
+    <nav
+      class="order-3 w-full border-t border-rule pt-[0.3rem] sm:order-none sm:w-auto sm:border-t-0 sm:pt-0"
+      aria-label={t.a11y.mainNav}
+    >
+      <ul class="flex justify-between gap-[clamp(0.8rem,2vw,1.75rem)] sm:justify-start">
         {
           links.map((link) => (
             <li>
-              <a href={link.href} aria-current={current === link.section ? 'page' : undefined}>
+              <a
+                class="border-b-[1.5px] border-transparent py-[0.25rem] font-sans text-[0.8rem] text-ink-soft no-underline transition-colors duration-[160ms] ease-brand hover:text-ink aria-[current=page]:border-accent aria-[current=page]:text-ink sm:py-[0.35rem] sm:text-[0.85rem]"
+                href={link.href}
+                aria-current={current === link.section ? 'page' : undefined}
+              >
                 {link.label}
               </a>
             </li>
@@ -45,111 +65,3 @@ const links = SECTIONS.map((section) => ({
     <LanguageSwitcher locale={locale} page={page} />
   </div>
 </header>
-
-<style>
-  .header {
-    position: sticky;
-    top: 0;
-    z-index: 20;
-    background: color-mix(in srgb, var(--paper) 88%, transparent);
-    backdrop-filter: saturate(140%) blur(10px);
-    border-bottom: 1px solid var(--rule);
-  }
-
-  .header__inner {
-    display: flex;
-    align-items: center;
-    gap: clamp(1rem, 3vw, 2.5rem);
-    padding-block: 0.75rem;
-  }
-
-  .brand {
-    display: flex;
-    flex-direction: column;
-    text-decoration: none;
-    line-height: 1.2;
-    margin-inline-end: auto;
-  }
-
-  .brand__name {
-    font-size: 1.02rem;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-  }
-
-  .brand__role {
-    font-family: var(--font-sans);
-    font-size: 0.72rem;
-    letter-spacing: 0.13em;
-    text-transform: uppercase;
-    color: var(--ink-faint);
-  }
-
-  .nav ul {
-    display: flex;
-    gap: clamp(0.8rem, 2vw, 1.75rem);
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-
-  .nav a {
-    font-family: var(--font-sans);
-    font-size: 0.85rem;
-    text-decoration: none;
-    color: var(--ink-soft);
-    padding-block: 0.35rem;
-    border-bottom: 1.5px solid transparent;
-    transition: color 160ms var(--ease), border-color 160ms var(--ease);
-  }
-
-  .nav a:hover {
-    color: var(--ink);
-  }
-
-  .nav a[aria-current='page'] {
-    color: var(--ink);
-    border-bottom-color: var(--accent);
-  }
-
-  /* Below the fold on phones the nav wraps under the brand rather than
-     collapsing into a hamburger: three links do not justify a menu. Kept as
-     tight as it can be — the header is sticky, and every pixel it takes is a
-     pixel off the top of the shelf. */
-  @media (max-width: 40rem) {
-    .header__inner {
-      flex-wrap: wrap;
-      row-gap: 0.35rem;
-      padding-block: 0.5rem;
-    }
-
-    .brand {
-      margin-inline-end: auto;
-      line-height: 1.15;
-    }
-
-    .brand__name {
-      font-size: 0.95rem;
-    }
-
-    .brand__role {
-      font-size: 0.62rem;
-    }
-
-    .nav {
-      order: 3;
-      width: 100%;
-      border-top: 1px solid var(--rule);
-      padding-top: 0.3rem;
-    }
-
-    .nav a {
-      padding-block: 0.25rem;
-      font-size: 0.8rem;
-    }
-
-    .nav ul {
-      justify-content: space-between;
-    }
-  }
-</style>

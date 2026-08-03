@@ -553,7 +553,7 @@ console.log('\n# seo');
       for (const host of ['dialnet.unirioja.es', 'todostuslibros.com', 'openlibrary.org', 'webofscience.com']) {
         if (!html.includes(host)) fail(`about: the page does not link ${host}`);
       }
-      if (!/class="elsewhere"/.test(html)) fail('about: no records-held-elsewhere section');
+      if (!/class="[^"]*\belsewhere\b[^"]*"/.test(html)) fail('about: no records-held-elsewhere section');
       else ok('about: the external records are visible to a reader');
     }
 
