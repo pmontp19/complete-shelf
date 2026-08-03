@@ -2,10 +2,11 @@
 import BaseLayout from '~/layouts/BaseLayout.astro';
 import Shelf from '~/components/Shelf.astro';
 import { LOCALES, type Locale } from '~/i18n/config';
-import { sectionPath } from '~/i18n/paths';
+import { homePath, sectionPath } from '~/i18n/paths';
 import { useTranslations } from '~/i18n/ui';
 import { ALL_BOOKS, paletteFor } from '~/data/books';
 import { collectionFacts } from '~/data/facts';
+import { catalogueNode } from '~/lib/seo/schema';
 
 export function getStaticPaths() {
   return LOCALES.map((lang) => ({ params: { lang } }));
@@ -13,6 +14,9 @@ export function getStaticPaths() {
 
 const locale = Astro.params.lang as Locale;
 const t = useTranslations(locale);
+
+const origin = Astro.site ?? new URL(Astro.url.origin);
+const canonical = new URL(homePath(locale), origin).href;
 
 const first = ALL_BOOKS[0];
 const tint = first
@@ -40,6 +44,7 @@ const facts = [
   description={t.home.metaDescription}
   page={{ kind: 'home' }}
   current="home"
+  mainEntity={catalogueNode(locale, origin, canonical)}
   tint={tint}
   wide
 >
