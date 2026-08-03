@@ -44,9 +44,10 @@ languages, no backend and no third-party requests at runtime.
 - **Progressive enhancement.** Without JavaScript, or without WebGL, the shelf is replaced by a
   complete cover grid. Nothing is only reachable through the 3D scene.
 - **Findable, by a search engine and by an answer engine.** One linked `@graph` of structured data
-  per page, `hreflang` alternates, a sitemap that declares every cover, and `/llms.txt` — the whole
-  bibliography as plain text, for a reader that cannot see a WebGL shelf. See
-  [Findability](#findability).
+  per page, `hreflang` alternates, a sitemap that declares every cover, a Markdown mirror of every
+  page, and `/llms.txt` — the whole bibliography as plain text, for a reader that cannot see a WebGL
+  shelf. Every credit points at the records that verify it, and the `Person` at the registries that
+  can confirm she is the one who holds them. See [Findability](#findability).
 
 ## Project structure
 
@@ -69,7 +70,10 @@ languages, no backend and no third-party requests at runtime.
     │   └── profile.ts      # biography, timeline and links, in five languages
     ├── i18n/               # locales, localised routes, UI dictionaries
     ├── lib/
-    │   ├── seo/schema.ts   # the JSON-LD graph every page carries
+    │   ├── seo/
+    │   │   ├── schema.ts   # the JSON-LD graph every page carries
+    │   │   ├── markdown.ts # the .md mirror of every page
+    │   │   └── guidance.ts # what llms.txt says to a reader that is not a person
     │   └── shelf/          # the three.js shelf, dependency-free
     ├── styles/
     │   ├── global.css      # the design system
@@ -80,7 +84,8 @@ languages, no backend and no third-party requests at runtime.
         ├── robots.txt.ts
         ├── sitemap.xml.ts
         ├── llms.txt.ts     # the site as an index, for answer engines
-        └── llms-full.txt.ts  # …and as one plain-text document
+        ├── llms-full.txt.ts  # …and as one plain-text document
+        └── [lang]/         # …and every page again as .md, beside its .astro
 ```
 
 ## Running it
@@ -161,7 +166,41 @@ records the visible pages render, so the machine-readable version cannot drift f
   about it, and one line per record with its ISBN. The second is the whole thing as plain text —
   biography, all 22 records with their synopses, the research list. A retrieval step that has decided
   this site answers the question can quote it in one fetch instead of crawling 132 pages whose home
-  page is a canvas.
+  page is a canvas. Both open with four things a reader cannot work out for itself
+  ([`src/lib/seo/guidance.ts`](src/lib/seo/guidance.ts)): how to fetch the text, what to cite
+  *instead* of this site, which forms of her name are hers, and how many of the five languages it can
+  safely skip.
+- **A Markdown mirror of every page.** Drop the trailing slash, add `.md`:
+  `/en/translations/la-casa-alemanya/` is also `/en/translations/la-casa-alemanya.md`, and every page
+  advertises its twin with `rel="alternate" type="text/markdown"`. 130 files, rendered from the same
+  records as the HTML ([`src/lib/seo/markdown.ts`](src/lib/seo/markdown.ts)), each with YAML front
+  matter carrying the ISBN, the language pair and the ORCID. The home page is the one that earns the
+  feature: its HTML is a WebGL shelf, so `/ca/index.md` is what the shelf *shows* — the catalogue, as
+  a table. They are deliberately absent from the sitemap: they are alternates of the HTML, not pages
+  of their own, and listing both would ask a crawler to treat one record as two.
+- **What can be checked somewhere else.** `profile.ts` carries nine annotated external records
+  ([`Authority`](src/data/profile.ts)), each saying what it covers and whether it is independent of
+  her: ORCID, the URV staff page, her Dialnet *author* record, Web of Science ResearcherID
+  R-7416-2018, the CEGAL/todostuslibros creator record, Open Library, TDX, the UAB faculty list and
+  Grup 62. Six are maintained by institutions with no connection to her, and those are the ones the
+  `Person`'s `sameAs` takes and `llms.txt` tells a reader to prefer — a bibliography that only cites
+  itself is worth very little. They are rendered on the biography page too, because "says who?" and
+  "what should I cite instead?" are the same question. `verifiedOn` records the day they were last
+  opened and found to still say this.
+- **Five DOIs**, verified against Crossref, on the publications that have them. A DOI resolves
+  without trusting this site, so it is what the `sameAs` and the `identifier` on a
+  `ScholarlyArticle` carry, and what `llms.txt` links.
+- **The name is the ambiguous part.** Crossref carries her as *Judith Raigal-Aran* on the John
+  Benjamins chapter and the Taylor & Francis article and as *Judith Raigal Aran* on the two Sage
+  ones, so a bibliography search on one form alone comes back short — both are in `alternateName`
+  and in `llms.txt`. The bare *Judith Raigal* is deliberately in neither: it belongs to more than one
+  person, and claiming it would invite exactly the merge that listing variants is meant to prevent.
+- **The disagreements are published, not reconciled.** CEGAL counts more than 22 because it lists
+  editions this bibliography treats as one title; Open Library counts fewer because it holds only
+  what reached its catalogue; Dialnet's author record says on its own page that it is not exhaustive.
+  All three appear under "Known disagreements" in both text files, because a retrieval step that is
+  told why the numbers differ can say so, and one that is told nothing picks a number and sounds
+  certain.
 - **Social cards** get explicit dimensions and alt text, and a record page uses its own jacket. A
   portrait cover in a wide card is cropped through the middle, so those pages ask for the small card
   instead of `summary_large_image`.
@@ -170,8 +209,12 @@ records the visible pages render, so the machine-readable version cannot drift f
   the covers. There are still no third-party requests and no webfonts.
 
 `npm test` covers all of it as data rather than by eye: the head of each kind of page, the JSON-LD
-graph on each (it has to parse, and its page URL has to agree with the canonical), the sitemap counts,
-the `robots.txt` groups, and every ISBN in `llms.txt`.
+graph on each (it has to parse, its page URL has to agree with the canonical, and its `Person` has to
+carry both identifiers, the hyphenated name form and the three independent registries), the sitemap
+counts, the `robots.txt` groups, every ISBN in `llms.txt`, and every internal link in it resolving.
+The Markdown mirrors are checked for being *served* as Markdown rather than as the HTML page next
+door — `.md` and a trailing slash are one typo apart in the route config, and the wrong one fails
+silently.
 
 ## Deployment
 
@@ -230,8 +273,15 @@ re-checked in August 2026, and each of the 22 credits was confirmed on the publi
 Retailer links were dropped in favour of those two — product pages churn, catalogue records do not.
 
 The research list is kept in step with her [ORCID record](https://orcid.org/0000-0002-0387-0867)
-and her Dialnet author records, which between them cover the journal articles, book chapters,
-reports and the thesis.
+and her [Dialnet author record](https://dialnet.unirioja.es/servlet/autor?codigo=5746504), which
+between them cover the journal articles, book chapters, reports and the thesis. Five of the entries
+carry a registered DOI, each checked against Crossref — which is also where the two spellings of her
+surname came from, and why both are recorded.
+
+The external records in `profile.ts` were each opened on the date in `verifiedOn` and found to still
+say what this repository claims they say. Re-checking them is the one maintenance task here that
+cannot be automated: the URLs resolve or they do not, but only a person can tell whether a page still
+names her.
 
 Cover images are reproduced from the publishers' own artwork and are shown for bibliographic
 identification only; they remain the property of the respective publishers.
