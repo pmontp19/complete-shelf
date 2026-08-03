@@ -17,13 +17,32 @@ export const LOCALE_NAMES: Record<Locale, string> = {
   fr: 'Français',
 };
 
-/** BCP-47 tags for `lang` attributes, `hreflang` and `Intl` formatting. */
+/** BCP-47 tags for `lang` attributes and `Intl` formatting. */
 export const LOCALE_TAGS: Record<Locale, string> = {
   ca: 'ca-ES',
   es: 'es-ES',
   en: 'en-GB',
   de: 'de-DE',
   fr: 'fr-FR',
+};
+
+/**
+ * Language-only tags, used for `hreflang` and nothing else.
+ *
+ * Deliberately not `LOCALE_TAGS`: `hreflang="en-GB"` claims the page is *for
+ * the United Kingdom*, so a reader in Ireland or the United States matches
+ * nothing and falls through to `x-default` — which here is Catalan. There is one
+ * English version of this site and it is for every English speaker, so the
+ * alternates say `en`. `LOCALE_TAGS` stays regional because `lang="en-GB"` is a
+ * true statement about the prose (and drives hyphenation and quote marks), and
+ * because `Intl` wants a region.
+ */
+export const HREFLANGS: Record<Locale, string> = {
+  ca: 'ca',
+  es: 'es',
+  en: 'en',
+  de: 'de',
+  fr: 'fr',
 };
 
 /** Localised URL segments. Kept ASCII-safe so the paths never need escaping. */

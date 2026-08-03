@@ -2,6 +2,7 @@
 import { type Locale } from '~/i18n/config';
 import { useTranslations } from '~/i18n/ui';
 import { PROFILE } from '~/data/profile';
+import { faqEntries } from '~/data/faq';
 
 interface Props {
   locale: Locale;
@@ -9,6 +10,14 @@ interface Props {
 
 const { locale } = Astro.props;
 const t = useTranslations(locale);
+
+/**
+ * The same six answers the page's `FAQPage` markup carries — built from the
+ * bibliography, so the count and the publishers in them cannot fall behind it.
+ * Plain prose in a `dl` rather than a set of `details`: an answer that has to be
+ * clicked open is an answer a reader has to hunt for.
+ */
+const faq = faqEntries(locale);
 ---
 
 <div class="page-head">
@@ -62,6 +71,22 @@ const t = useTranslations(locale);
       </div>
     )
   }
+
+  {
+    faq.length > 0 && (
+      <section class="faq">
+        <h2 class="contact__label">{t.faq.title}</h2>
+        <dl class="faq__list">
+          {faq.map((entry) => (
+            <div class="faq__item">
+              <dt>{entry.question}</dt>
+              <dd>{entry.answer}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+    )
+  }
 </div>
 
 <style>
@@ -73,9 +98,38 @@ const t = useTranslations(locale);
 
   .contact__primary,
   .contact__block,
-  .contact__links {
+  .contact__links,
+  .faq {
     padding-top: 1.35rem;
     border-top: 1px solid var(--rule);
+  }
+
+  /* `h2` inherits the display face; here it is a label like the others above it,
+     so it takes their type and not a second heading size. */
+  .faq h2 {
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    margin: 0 0 0.9rem;
+  }
+
+  .faq__list {
+    display: grid;
+    gap: 1.5rem;
+    margin: 0;
+    max-width: 62ch;
+  }
+
+  .faq__item dt {
+    font-size: 1.02rem;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  .faq__item dd {
+    margin: 0.4rem 0 0;
+    color: var(--ink-soft);
+    line-height: 1.65;
   }
 
   /* `p` is capped at the reading measure globally; here the element carries a

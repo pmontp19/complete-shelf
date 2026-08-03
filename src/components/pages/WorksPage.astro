@@ -72,13 +72,17 @@ const countLabel = count === 1 ? t.works.countOne : interpolate(t.works.count, {
                 instead of repainting the page. Costs no JavaScript: the
                 navigation is an ordinary one, and `@view-transition` in
                 global.css is what makes the browser animate across it. */}
+            {/* The first row is above the fold on every viewport, and a lazy
+                image there is a deferred request for the page's own largest
+                element — so the opening covers load eagerly and the rest wait. */}
             <img
               src={thumbFor(book.id)}
               width="320"
               height="480"
-              loading="lazy"
+              loading={index < 4 ? 'eager' : 'lazy'}
+              fetchpriority={index === 0 ? 'high' : undefined}
               decoding="async"
-              alt={`${book.title} — ${book.author}`}
+              alt={interpolate(t.book.coverAlt, { title: book.title, author: book.author })}
               style={`view-transition-name:cover-${book.id}`}
             />
           </span>

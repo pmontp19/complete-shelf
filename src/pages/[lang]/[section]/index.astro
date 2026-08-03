@@ -6,6 +6,15 @@ import AboutPage from '~/components/pages/AboutPage.astro';
 import ContactPage from '~/components/pages/ContactPage.astro';
 import { LOCALES, ROUTES, SECTIONS, type Locale, type Section } from '~/i18n/config';
 import { useTranslations } from '~/i18n/ui';
+import { translatePath } from '~/i18n/paths';
+import { faqEntries } from '~/data/faq';
+import {
+  catalogueNode,
+  personId,
+  publicationNodes,
+  questionNodes,
+  type Node,
+} from '~/lib/seo/schema';
 
 /**
  * One thin router for the three top-level sections. Keeping them in a single
@@ -30,6 +39,31 @@ const meta: Record<Section, { title: string; description: string }> = {
   about: { title: t.about.title, description: t.about.metaDescription },
   contact: { title: t.contact.title, description: t.contact.metaDescription },
 };
+
+/**
+ * What each section is, in structured terms. The catalogue is an ordered list of
+ * editions; the biography is a profile with the research record attached; the
+ * contact page answers questions, so it says so in the vocabulary an answer
+ * engine reads — and from the very same list it renders.
+ */
+const origin = Astro.site ?? new URL(Astro.url.origin);
+const canonical = new URL(translatePath(locale, { kind: 'section', section }), origin).href;
+
+const faq = section === 'contact' ? faqEntries(locale) : [];
+
+const mainEntity: Record<Section, Node | Node[] | undefined> = {
+  works: catalogueNode(locale, origin, canonical),
+  // A `ProfilePage` is expected to name whose profile it is, and the node itself
+  // is already in the graph — so this is the reference, not a second copy.
+  about: { '@id': personId(origin) },
+  contact: questionNodes(faq, canonical),
+};
+
+const extraNodes: Record<Section, Node[]> = {
+  works: [],
+  about: publicationNodes(locale, origin),
+  contact: [],
+};
 ---
 
 <BaseLayout
@@ -38,6 +72,9 @@ const meta: Record<Section, { title: string; description: string }> = {
   description={meta[section].description}
   page={{ kind: 'section', section }}
   current={section}
+  pageTypes={section === 'contact' ? ['FAQPage'] : []}
+  mainEntity={mainEntity[section]}
+  schema={extraNodes[section]}
 >
   {section === 'works' && <WorksPage locale={locale} />}
   {section === 'about' && <AboutPage locale={locale} />}

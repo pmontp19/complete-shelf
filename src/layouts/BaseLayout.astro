@@ -2,10 +2,35 @@
 import '~/styles/global.css';
 import SiteHeader from '~/components/SiteHeader.astro';
 import SiteFooter from '~/components/SiteFooter.astro';
-import { LOCALES, LOCALE_TAGS, DEFAULT_LOCALE, type Locale, type Section } from '~/i18n/config';
+import {
+  LOCALES,
+  LOCALE_TAGS,
+  HREFLANGS,
+  DEFAULT_LOCALE,
+  type Locale,
+  type Section,
+} from '~/i18n/config';
 import { translatePath, assetPath } from '~/i18n/paths';
 import { useTranslations } from '~/i18n/ui';
 import type { PageRef } from '~/i18n/page-ref';
+import {
+  breadcrumbNode,
+  breadcrumbSteps,
+  pageTypeFor,
+  personId,
+  personNode,
+  websiteId,
+  websiteNode,
+  type Node,
+} from '~/lib/seo/schema';
+
+/** A social preview image, with the real dimensions of the file behind it. */
+export interface SocialImage {
+  src: string;
+  width: number;
+  height: number;
+  alt: string;
+}
 
 interface Props {
   locale: Locale;
@@ -15,8 +40,21 @@ interface Props {
   page: PageRef;
   /** Which nav item to mark as current. */
   current?: Section | 'home';
-  /** Absolute-ish path of a social preview image. */
-  ogImage?: string;
+  /** Overrides the default social card. */
+  ogImage?: SocialImage;
+  /** Open Graph object type; `website` unless the page is really something else. */
+  ogType?: string;
+  /**
+   * Extra schema.org types for the page node, on top of the one its route
+   * implies — the contact page is both a `ContactPage` and an `FAQPage`.
+   */
+  pageTypes?: string[];
+  /** What the page is chiefly about, inlined into the page node. */
+  mainEntity?: Node | Node[];
+  /** Overrides `about` on the page node, which is otherwise her. */
+  about?: Node;
+  /** Further top-level nodes for the page's `@graph`. */
+  schema?: Node[];
   /** Cover palette of the featured book, used to tint the page. */
   tint?: { color: string; contrast: string };
   /** Full-bleed pages (the shelf) opt out of the default max-width main. */
@@ -30,6 +68,11 @@ const {
   page,
   current = 'home',
   ogImage,
+  ogType = 'website',
+  pageTypes = [],
+  mainEntity,
+  about,
+  schema = [],
   tint,
   wide = false,
 } = Astro.props;
@@ -37,26 +80,66 @@ const {
 const t = useTranslations(locale);
 const fullTitle = title === t.site.name ? `${t.site.name} — ${t.site.role}` : `${title} — ${t.site.name}`;
 
-const canonical = new URL(translatePath(locale, page), Astro.site ?? Astro.url.origin);
+const origin = Astro.site ?? new URL(Astro.url.origin);
+const canonical = new URL(translatePath(locale, page), origin);
 const alternates = LOCALES.map((code) => ({
   code,
-  tag: LOCALE_TAGS[code],
-  href: new URL(translatePath(code, page), Astro.site ?? Astro.url.origin).href,
+  tag: HREFLANGS[code],
+  href: new URL(translatePath(code, page), origin).href,
 }));
 
-const socialImage = new URL(ogImage ?? assetPath('og-default.png'), Astro.site ?? Astro.url.origin)
-  .href;
+/** The default card is 1200×630, the size `scripts/build-og.mjs` renders it at. */
+const social: SocialImage = ogImage ?? {
+  src: assetPath('og-default.png'),
+  width: 1200,
+  height: 630,
+  alt: `${t.site.name} — ${t.site.role}. ${t.site.tagline}`,
+};
+const socialImage = new URL(social.src, origin).href;
+
+/**
+ * A portrait image in a `summary_large_image` card is cropped to a letterbox and
+ * loses the top and bottom of the cover, so a book's own jacket gets the small
+ * square card instead. Anything landscape keeps the wide one.
+ */
+const twitterCard = social.width >= social.height ? 'summary_large_image' : 'summary';
 
 const tintStyle = tint ? `--tint:${tint.color};--tint-contrast:${tint.contrast};` : undefined;
 
-const personSchema = {
+const steps = breadcrumbSteps(locale, page, title, origin);
+const types = [pageTypeFor(page), ...pageTypes];
+
+/**
+ * One `@graph` for the page: her, the site, this page, its trail, and whatever
+ * the page adds. Linked by `@id` rather than repeated, so every page states the
+ * same facts about the same entities.
+ */
+const jsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'Person',
-  name: t.site.name,
-  jobTitle: t.site.role,
-  description,
-  url: canonical.href,
-  knowsLanguage: ['ca', 'es', 'en', 'de', 'fr'],
+  '@graph': [
+    websiteNode(locale, origin),
+    personNode(locale, origin),
+    {
+      '@type': types.length === 1 ? types[0] : types,
+      '@id': `${canonical.href}#webpage`,
+      url: canonical.href,
+      name: fullTitle,
+      description,
+      inLanguage: LOCALE_TAGS[locale],
+      isPartOf: { '@id': websiteId(origin) },
+      about: about ?? { '@id': personId(origin) },
+      ...(mainEntity ? { mainEntity } : {}),
+      primaryImageOfPage: {
+        '@type': 'ImageObject',
+        url: socialImage,
+        width: social.width,
+        height: social.height,
+      },
+      ...(steps.length > 0 ? { breadcrumb: { '@id': `${canonical.href}#breadcrumb` } } : {}),
+    },
+    ...(steps.length > 0 ? [breadcrumbNode(canonical.href, steps)] : []),
+    ...schema,
+  ],
 };
 ---
 
@@ -68,6 +151,14 @@ const personSchema = {
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical.href} />
+    {/* Explicit rather than left to the default: the two `max-…` directives are
+        what let a result carry a full-size cover and an untruncated snippet, and
+        they are only read if a robots directive is actually present. */}
+    <meta
+      name="robots"
+      content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"
+    />
+    <meta name="author" content={t.site.name} />
     {
       alternates.map((alt) => (
         <link rel="alternate" hreflang={alt.tag} href={alt.href} />
@@ -76,21 +167,40 @@ const personSchema = {
     <link
       rel="alternate"
       hreflang="x-default"
-      href={new URL(translatePath(DEFAULT_LOCALE, page), Astro.site ?? Astro.url.origin).href}
+      href={new URL(translatePath(DEFAULT_LOCALE, page), origin).href}
     />
+    <link rel="sitemap" type="application/xml" href={assetPath('sitemap.xml')} />
 
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={ogType} />
     <meta property="og:site_name" content={t.site.name} />
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical.href} />
     <meta property="og:image" content={socialImage} />
+    <meta property="og:image:width" content={String(social.width)} />
+    <meta property="og:image:height" content={String(social.height)} />
+    <meta property="og:image:alt" content={social.alt} />
     <meta property="og:locale" content={LOCALE_TAGS[locale].replace('-', '_')} />
-    <meta name="twitter:card" content="summary_large_image" />
+    {
+      LOCALES.filter((code) => code !== locale).map((code) => (
+        <meta property="og:locale:alternate" content={LOCALE_TAGS[code].replace('-', '_')} />
+      ))
+    }
+    {/* Spelled out rather than left to fall back to the Open Graph tags: some
+        scrapers read only the `twitter:` set, and then a page has no card. */}
+    <meta name="twitter:card" content={twitterCard} />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={socialImage} />
+    <meta name="twitter:image:alt" content={social.alt} />
 
     <meta name="theme-color" content="#f7f3ec" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#16130f" media="(prefers-color-scheme: dark)" />
     <link rel="icon" href={assetPath('favicon.svg')} type="image/svg+xml" />
+    {/* `/llms.txt` is deliberately *not* linked from here as a `rel="alternate"`:
+        it is an index of the whole site, not a plain-text rendering of this page,
+        and saying otherwise would be a false statement on 132 pages. It is
+        announced in `robots.txt`, which is where the convention puts it. */}
 
     {/* No webfonts on purpose: the type stacks in global.css resolve locally,
         so the site has zero third-party requests and renders instantly offline. */}
@@ -107,7 +217,7 @@ const personSchema = {
       }
     </script>
 
-    <script is:inline type="application/ld+json" set:html={JSON.stringify(personSchema)}></script>
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)}></script>
     <slot name="head" />
   </head>
   <body>

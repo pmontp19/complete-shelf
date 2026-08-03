@@ -5,6 +5,7 @@ import { LOCALES, type Locale } from '~/i18n/config';
 import { sectionPath } from '~/i18n/paths';
 import { useTranslations } from '~/i18n/ui';
 import { ALL_BOOKS, paletteFor } from '~/data/books';
+import { collectionFacts } from '~/data/facts';
 
 export function getStaticPaths() {
   return LOCALES.map((lang) => ({ params: { lang } }));
@@ -19,22 +20,20 @@ const tint = first
   : undefined;
 
 // The colophon band under the shelf: four facts about the collection, all
-// derived from the bibliography so they can never drift out of date.
-const years = ALL_BOOKS.map((book) => book.year);
-const sourceLanguages = [...new Set(ALL_BOOKS.map((book) => book.originalLanguage))];
-const publishers = [...new Set(ALL_BOOKS.map((book) => book.publisher))];
+// derived from the bibliography so they can never drift out of date. The same
+// figures answer the FAQ and fill `llms.txt`, so the derivation lives in one
+// place — `~/data/facts` — rather than once per page that quotes it.
+const collection = collectionFacts(locale);
 
 const facts = [
-  { label: t.works.title, value: String(ALL_BOOKS.length) },
-  {
-    label: t.book.year,
-    value: years.length > 0 ? `${Math.min(...years)}–${Math.max(...years)}` : '—',
-  },
+  { label: t.works.title, value: String(collection.count) },
+  { label: t.book.year, value: collection.count > 0 ? collection.span : '—' },
   {
     label: t.works.filterLanguage,
-    value: sourceLanguages.map((code) => t.languages[code]).join(' · '),
+    // Separated rather than joined into a sentence: this is a caption, not prose.
+    value: collection.sourceLanguages.map((code) => t.languages[code]).join(' · '),
   },
-  { label: t.book.publisher, value: publishers.join(' · ') },
+  { label: t.book.publisher, value: collection.publishers.join(' · ') },
 ];
 ---
 

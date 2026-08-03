@@ -43,6 +43,10 @@ languages, no backend and no third-party requests at runtime.
   co-translators, a synopsis in the reader's language, and the sources that verify the credit.
 - **Progressive enhancement.** Without JavaScript, or without WebGL, the shelf is replaced by a
   complete cover grid. Nothing is only reachable through the 3D scene.
+- **Findable, by a search engine and by an answer engine.** One linked `@graph` of structured data
+  per page, `hreflang` alternates, a sitemap that declares every cover, and `/llms.txt` — the whole
+  bibliography as plain text, for a reader that cannot see a WebGL shelf. See
+  [Findability](#findability).
 
 ## Project structure
 
@@ -60,15 +64,23 @@ languages, no backend and no third-party requests at runtime.
     │   ├── cover-sources.json
     │   ├── cover-meta.json # generated: per-cover palette
     │   ├── books.ts        # typed loader, sorting, helpers
+    │   ├── facts.ts        # figures derived from the bibliography, in one place
+    │   ├── faq.ts          # the contact page's answers, with those figures in them
     │   └── profile.ts      # biography, timeline and links, in five languages
     ├── i18n/               # locales, localised routes, UI dictionaries
-    ├── lib/shelf/          # the three.js shelf, dependency-free
+    ├── lib/
+    │   ├── seo/schema.ts   # the JSON-LD graph every page carries
+    │   └── shelf/          # the three.js shelf, dependency-free
     ├── styles/
     │   ├── global.css      # the design system
     │   └── view-transitions.css  # imported only by the pages that take part
     ├── components/
     ├── layouts/
     └── pages/
+        ├── robots.txt.ts
+        ├── sitemap.xml.ts
+        ├── llms.txt.ts     # the site as an index, for answer engines
+        └── llms-full.txt.ts  # …and as one plain-text document
 ```
 
 ## Running it
@@ -108,6 +120,58 @@ On Astro 7 `astro dev` starts a managed background daemon rather than holding th
 
 Everything else — the catalogue, the filters, the shelf, the sitemap, the five language versions —
 derives from that one record.
+
+## Findability
+
+The site has one job beyond looking like itself: when someone asks who translated a given novel into
+Catalan — of a search engine, or of something that answers in prose — the answer should be here and
+should be attributable. Everything below is generated from `books.json` and `profile.ts`, the same
+records the visible pages render, so the machine-readable version cannot drift from the human one.
+
+- **One `@graph` per page** ([`src/lib/seo/schema.ts`](src/lib/seo/schema.ts)), not a scattering of
+  loose blocks. Every page carries the same `Person` and `WebSite` nodes under stable `@id`s, plus
+  the page itself and its breadcrumb trail. A record page's `mainEntity` is the `Book`, with
+  `translationOfWork` naming the original and `translator` pointing at that one `Person` `@id` — so
+  "translated by" is a relation between two identified things rather than a coincidence of names.
+  The catalogue is a `CollectionPage` holding an `ItemList` of all of them, the biography a
+  `ProfilePage` with the research record attached as `ScholarlyArticle`, `Chapter`, `Report` and
+  `Thesis` nodes she authors, the contact page a `ContactPage` that is also an `FAQPage`.
+- **The `Person` node is the anchor.** ORCID as an `identifier` and `sameAs` links to the URV staff
+  page, ORCID, Dialnet and X are what let an engine decide this Judith Raigal Aran is the one who
+  wrote the thesis, and not a namesake. `worksFor`, `alumniOf`, `knowsLanguage`, `knowsAbout`,
+  `address` and `workLocation` (Tarragona, Barcelona) say the rest. No birth date, no street address,
+  no nationality: only what is already published about her professionally.
+- **Six questions, answered twice.** The contact page's FAQ is rendered from
+  [`src/data/faq.ts`](src/data/faq.ts) — once as prose a reader sees, once as `Question`/`Answer`
+  nodes — and the counts and publishers inside the answers come from the bibliography, so they
+  cannot go stale. `npm test` checks that every answer in the markup is also text on the page; markup
+  that says something the page does not is worth less than none.
+- **`hreflang` is language-only** (`ca`, `es`, `en`, `de`, `fr`, plus `x-default`), while `lang`
+  stays regional. `hreflang="en-GB"` would have claimed the English version is *for the United
+  Kingdom* and left a reader in Dublin or Chicago matching nothing but the Catalan default.
+- **The sitemap** carries the full `xhtml:link` alternate set on all 130 URLs and an `image:image`
+  for each of the 110 record pages, so a cover can be found on its own and lead back to the record.
+  It has no `lastmod`: nothing here records when a record changed, and one build timestamp stamped
+  onto every URL is a date about the deploy.
+- **`robots.txt` names the answer engines** — GPTBot, ClaudeBot, PerplexityBot, Google-Extended and
+  the rest — and allows every one of them. Two of those agents exist only as an opt-out, so saying
+  yes explicitly is the only way to say it at all; it also means a future decision to shut one out is
+  a visible edit rather than a silent default.
+- **`/llms.txt` and `/llms-full.txt`.** The first is an index: what the site is, what is verifiable
+  about it, and one line per record with its ISBN. The second is the whole thing as plain text —
+  biography, all 22 records with their synopses, the research list. A retrieval step that has decided
+  this site answers the question can quote it in one fetch instead of crawling 132 pages whose home
+  page is a canvas.
+- **Social cards** get explicit dimensions and alt text, and a record page uses its own jacket. A
+  portrait cover in a wide card is cropped through the middle, so those pages ask for the small card
+  instead of `summary_large_image`.
+- **Core Web Vitals**: the record page preloads its cover, the catalogue's first row loads eagerly
+  and the rest lazily, and `vercel.json` sets immutable caching on the hashed assets and a week on
+  the covers. There are still no third-party requests and no webfonts.
+
+`npm test` covers all of it as data rather than by eye: the head of each kind of page, the JSON-LD
+graph on each (it has to parse, and its page URL has to agree with the canonical), the sitemap counts,
+the `robots.txt` groups, and every ISBN in `llms.txt`.
 
 ## Deployment
 

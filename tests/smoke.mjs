@@ -181,8 +181,10 @@ console.log('\n# book detail + i18n');
   if ((await page.locator('h1').count()) !== 1) fail('detail page does not have exactly one h1');
   else ok('single h1');
 
-  // The language switcher must keep the reader on the same book.
-  await page.locator('.langs a[hreflang="de-DE"]').click();
+  // The language switcher must keep the reader on the same book. `hreflang` is a
+  // language-only tag by design — see `HREFLANGS` — so this selector is also the
+  // regression test for it turning back into `de-DE`.
+  await page.locator('.langs a[hreflang="de"]').click();
   await page.waitForLoadState('networkidle');
   if (!page.url().includes('/de/uebersetzungen/la-casa-alemanya/')) {
     fail(`language switch lost the page: ${page.url()}`);
@@ -271,9 +273,193 @@ console.log('\n# degradation');
   await ctx.close();
 }
 
+// ----------------------------------------------------------------- seo ----
+// Everything a crawler or an answer engine is handed, checked as data rather
+// than by eye: the head of each kind of page, the machine-readable files, and
+// the one invariant that matters most — that the structured data says the same
+// thing the page does.
+console.log('\n# seo');
+{
+  const text = async (path) => {
+    const res = await fetch(`${BASE}/${path}`);
+    if (!res.ok) fail(`${path} not served (${res.status})`);
+    return res.ok ? res.text() : '';
+  };
+
+  // -- robots.txt ------------------------------------------------------------
+  const robots = await text('robots.txt');
+  if (!/^Sitemap: https?:\/\/\S+\/sitemap\.xml$/m.test(robots)) fail('robots.txt has no absolute sitemap');
+  else ok('robots.txt points at the sitemap');
+  for (const agent of ['GPTBot', 'ClaudeBot', 'PerplexityBot', 'Google-Extended']) {
+    if (!new RegExp(`^User-agent: ${agent}$`, 'm').test(robots)) fail(`robots.txt does not name ${agent}`);
+  }
+  if (/^Disallow: \/\s*$/m.test(robots)) fail('robots.txt disallows the whole site');
+  else ok('robots.txt admits the answer engines');
+  if (!robots.includes('llms.txt')) fail('robots.txt does not mention llms.txt');
+
+  // -- llms.txt / llms-full.txt ---------------------------------------------
+  const llms = await text('llms.txt');
+  if (!llms.startsWith('# Judith Raigal Aran')) fail('llms.txt does not open with an H1');
+  const missingIsbn = books.filter((book) => !llms.includes(book.isbn));
+  if (missingIsbn.length) fail(`llms.txt is missing ${missingIsbn.length} ISBN(s)`);
+  else ok(`llms.txt lists all ${EXPECTED} records with their ISBNs`);
+  if (!llms.includes('llms-full.txt')) fail('llms.txt does not link its full version');
+
+  const full = await text('llms-full.txt');
+  const missingTitle = books.filter((book) => !full.includes(book.title));
+  if (missingTitle.length) fail(`llms-full.txt is missing ${missingTitle.length} title(s)`);
+  else ok(`llms-full.txt carries all ${EXPECTED} records`);
+  if (!/## Biography/.test(full) || !/## Contact/.test(full)) fail('llms-full.txt is missing a section');
+
+  // -- sitemap ---------------------------------------------------------------
+  const sitemap = await text('sitemap.xml');
+  const locs = [...sitemap.matchAll(/<loc>/g)].length;
+  if (locs !== (EXPECTED + 4) * 5) fail(`sitemap has ${locs} URLs, expected ${(EXPECTED + 4) * 5}`);
+  else ok(`sitemap lists ${locs} URLs`);
+  const images = [...sitemap.matchAll(/<image:loc>/g)].length;
+  if (images !== EXPECTED * 5) fail(`sitemap has ${images} cover images, expected ${EXPECTED * 5}`);
+  else ok(`sitemap declares ${images} cover images`);
+  if (/hreflang="[a-z]{2}-[A-Z]{2}"/.test(sitemap)) fail('sitemap uses region-locked hreflang tags');
+  if (!/hreflang="x-default"/.test(sitemap)) fail('sitemap has no x-default');
+
+  // -- the head of every kind of page ---------------------------------------
+  const PAGES = [
+    ['ca/', 'home'],
+    ['ca/traduccions/', 'works'],
+    ['ca/biografia/', 'about'],
+    ['ca/contacte/', 'contact'],
+    ['ca/traduccions/la-casa-alemanya/', 'book'],
+    ['de/uebersetzungen/la-casa-alemanya/', 'book (de)'],
+  ];
+
+  for (const [path, label] of PAGES) {
+    const html = await text(path);
+    const one = (re, what) => {
+      const matches = [...html.matchAll(re)];
+      if (matches.length !== 1) fail(`${label}: expected one ${what}, found ${matches.length}`);
+      return matches[0]?.[1];
+    };
+
+    const canonical = one(/<link rel="canonical" href="([^"]+)"/g, 'canonical');
+    if (canonical && !canonical.startsWith('http')) fail(`${label}: canonical is not absolute`);
+    if (canonical && !canonical.endsWith(`/${path}`)) {
+      fail(`${label}: canonical ${canonical} does not end in /${path}`);
+    }
+
+    const hreflangs = [...html.matchAll(/<link rel="alternate" hreflang="([^"]+)"/g)].map((m) => m[1]);
+    const expected = ['ca', 'es', 'en', 'de', 'fr', 'x-default'];
+    if (hreflangs.join(',') !== expected.join(',')) {
+      fail(`${label}: hreflang set is ${hreflangs.join(',')}, expected ${expected.join(',')}`);
+    }
+
+    const robotsMeta = one(/<meta name="robots" content="([^"]+)"/g, 'robots meta');
+    if (robotsMeta && !robotsMeta.includes('max-image-preview:large')) {
+      fail(`${label}: robots meta does not allow a large image preview`);
+    }
+
+    const ogImage = one(/<meta property="og:image" content="([^"]+)"/g, 'og:image');
+    if (ogImage && !ogImage.startsWith('http')) fail(`${label}: og:image is not absolute`);
+    if (!/<meta property="og:image:width"/.test(html)) fail(`${label}: og:image has no dimensions`);
+    if (!/<meta property="og:image:alt"/.test(html)) fail(`${label}: og:image has no alt text`);
+
+    const description = one(/<meta name="description" content="([^"]*)"/g, 'description');
+    if (!description) fail(`${label}: empty meta description`);
+
+    // Exactly one JSON-LD block per page, and it has to parse.
+    const blocks = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
+    if (blocks.length !== 1) {
+      fail(`${label}: expected one JSON-LD block, found ${blocks.length}`);
+      continue;
+    }
+    let graph;
+    try {
+      graph = JSON.parse(blocks[0][1])['@graph'];
+    } catch (error) {
+      fail(`${label}: JSON-LD does not parse (${error.message})`);
+      continue;
+    }
+    if (!Array.isArray(graph)) {
+      fail(`${label}: JSON-LD is not a @graph`);
+      continue;
+    }
+
+    const byType = (type) =>
+      graph.filter((node) => [].concat(node['@type'] ?? []).includes(type));
+    const person = byType('Person')[0];
+    if (!person?.['@id']?.endsWith('#person')) fail(`${label}: no Person with a stable @id`);
+    if (!person?.sameAs?.some((href) => href.includes('orcid.org'))) {
+      fail(`${label}: the Person node carries no ORCID`);
+    }
+    if (byType('WebSite').length !== 1) fail(`${label}: expected exactly one WebSite node`);
+
+    const pageNode = graph.find((node) => String(node['@id']).endsWith('#webpage'));
+    if (!pageNode) fail(`${label}: no page node in the graph`);
+    if (pageNode && pageNode.url !== canonical) {
+      fail(`${label}: page node url ${pageNode.url} disagrees with the canonical`);
+    }
+
+    if (label.startsWith('book')) {
+      const book = pageNode?.mainEntity;
+      if (book?.['@type'] !== 'Book') fail(`${label}: the page is not about a Book`);
+      if (book?.isbn !== '9788466424912') fail(`${label}: wrong or missing ISBN (${book?.isbn})`);
+      if (!book?.translationOfWork?.name) fail(`${label}: Book does not name the work it translates`);
+      const translators = [].concat(book?.translator ?? []);
+      if (!translators.some((entry) => String(entry['@id']).endsWith('#person'))) {
+        fail(`${label}: the translation is not linked to her`);
+      }
+      const crumbs = byType('BreadcrumbList')[0]?.itemListElement ?? [];
+      if (crumbs.length !== 3) fail(`${label}: breadcrumb has ${crumbs.length} steps, expected 3`);
+      // A portrait cover in a wide card is cropped through the middle.
+      if (!/<meta name="twitter:card" content="summary"/.test(html)) {
+        fail(`${label}: a portrait cover should use the small card`);
+      }
+      ok(`${label}: Book, breadcrumb and cover card`);
+    }
+
+    if (label === 'works') {
+      const list = pageNode?.mainEntity;
+      if (list?.['@type'] !== 'ItemList') fail('works: the catalogue is not an ItemList');
+      if (list?.itemListElement?.length !== EXPECTED) {
+        fail(`works: ItemList holds ${list?.itemListElement?.length}, expected ${EXPECTED}`);
+      } else ok(`works: ItemList of ${EXPECTED} editions`);
+    }
+
+    if (label === 'about') {
+      if (!byType('ProfilePage').length) fail('about: not marked up as a ProfilePage');
+      const works = graph.filter((node) => String(node['@id']).includes('#publication-'));
+      if (works.length < 10) fail(`about: only ${works.length} publications in the graph`);
+      else ok(`about: ${works.length} publications, authored by the site's Person`);
+    }
+
+    if (label === 'contact') {
+      const types = [].concat(pageNode?.['@type'] ?? []);
+      if (!types.includes('FAQPage')) fail('contact: not marked up as an FAQPage');
+      const questions = [].concat(pageNode?.mainEntity ?? []);
+      if (questions.length < 5) fail(`contact: only ${questions.length} questions`);
+      // The point of the markup is that it repeats the page, not that it exists.
+      for (const question of questions) {
+        const answer = question.acceptedAnswer?.text ?? '';
+        if (!html.includes(answer.replace(/&/g, '&#38;'))) {
+          fail(`contact: an answer in the markup is not on the page ("${answer.slice(0, 40)}…")`);
+        }
+      }
+      ok(`contact: FAQPage with ${questions.length} questions, all of them visible`);
+    }
+  }
+  ok('heads carry canonical, hreflang, robots and social metadata');
+}
+
 // ------------------------------------------------------------- routing ----
 console.log('\n# routing');
-for (const path of ['sitemap.xml', 'robots.txt', '404.html', 'og-default.png', 'favicon.svg']) {
+for (const path of [
+  'sitemap.xml',
+  'robots.txt',
+  'llms.txt',
+  'llms-full.txt',
+  '404.html',
+  'og-default.png',
+  'favicon.svg',
+]) {
   const res = await fetch(`${BASE}/${path}`).catch(() => null);
   if (!res?.ok) fail(`${path} not served (${res?.status ?? 'no response'})`);
   else ok(path);
