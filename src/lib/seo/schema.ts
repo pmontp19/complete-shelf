@@ -80,6 +80,7 @@ export function personNode(locale: Locale, origin: URL | string): Node {
     description: opening ?? t.about.metaDescription,
     url: abs(origin, homePath(locale)),
     mainEntityOfPage: { '@id': `${abs(origin, sectionPath(locale, 'about'))}#webpage` },
+    ...(PROFILE.portrait ? { image: abs(origin, assetPath(PROFILE.portrait.src)) } : {}),
     ...(PROFILE.email ? { email: `mailto:${PROFILE.email}` } : {}),
     sameAs: sameAsFor(),
     // Two resolvable identifiers rather than one: a consumer that cannot match
