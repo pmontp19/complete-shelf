@@ -2,6 +2,7 @@
   {
     "id": "campus-drivers-2-novio-perfecte",
     "title": "Campus Drivers 2. Nòvio perfecte",
+    "spineTitle": "Nòvio perfecte",
     "originalTitle": "Campus Drivers, tome 2: Book Boyfriend",
     "author": "C. S. Quill",
     "originalLanguage": "fr",
@@ -55,6 +56,7 @@
   {
     "id": "campus-drivers-1-sense-frens",
     "title": "Campus Drivers 1. Sense frens",
+    "spineTitle": "Sense frens",
     "originalTitle": "Campus Drivers, tome 1: Supermad",
     "author": "C. S. Quill",
     "originalLanguage": "fr",
@@ -284,6 +286,7 @@
   {
     "id": "un-un-sol-recipient",
     "title": "Un. Un sol recipient, receptes fàcils",
+    "spineTitle": "Un",
     "originalTitle": "One: Simple One-Pan Wonders",
     "author": "Jamie Oliver",
     "originalLanguage": "en",

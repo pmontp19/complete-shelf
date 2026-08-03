@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import '~/styles/view-transitions.css';
 import { LOCALES, ROUTES, type Locale } from '~/i18n/config';
 import { bookPath, sectionPath } from '~/i18n/paths';
 import { useTranslations, interpolate } from '~/i18n/ui';
@@ -96,18 +97,23 @@ const schema = {
 
   <article class="book" data-reveal>
     <div class="book__cover">
+      {/* The names pair this cover and heading with the same volume's card in
+          the catalogue, so the browser moves them across the navigation rather
+          than fading the whole page. Per book, because the catalogue holds all
+          22 at once and a view transition name has to be unique in a document. */}
       <img
         src={coverFor(book.id)}
         width={cover.width}
         height={cover.height}
         alt={`${t.book.originalTitle}: ${book.originalTitle}. ${book.title}, ${book.author}`}
         fetchpriority="high"
+        style={`view-transition-name:cover-${book.id}`}
       />
     </div>
 
     <div class="book__body">
       <p class="eyebrow">{book.publisher} · {book.year}</p>
-      <h1>{book.title}</h1>
+      <h1 style={`view-transition-name:title-${book.id}`}>{book.title}</h1>
       <p class="book__author">{book.author}</p>
       {/* Label-free on purpose: the `from`/`into` labels are nouns now, so an
           arrow reads better here than "Source language Deutsch". */}
@@ -162,7 +168,11 @@ const schema = {
       previous ? (
         <a class="pager__link" href={bookPath(locale, previous.id)} rel="prev">
           <span class="pager__label">← {t.book.previous}</span>
-          <span class="pager__title">{previous.title}</span>
+          {/* Named after the volume it leads to, so walking the catalogue with
+              the pager carries the title up into the next page's heading. */}
+          <span class="pager__title" style={`view-transition-name:title-${previous.id}`}>
+            {previous.title}
+          </span>
         </a>
       ) : (
         // Holds the first grid column so a lone "next" link stays right-aligned.
@@ -173,7 +183,9 @@ const schema = {
       next && (
         <a class="pager__link pager__link--next" href={bookPath(locale, next.id)} rel="next">
           <span class="pager__label">{t.book.next} →</span>
-          <span class="pager__title">{next.title}</span>
+          <span class="pager__title" style={`view-transition-name:title-${next.id}`}>
+            {next.title}
+          </span>
         </a>
       )
     }
@@ -237,7 +249,15 @@ const schema = {
     border-radius: var(--radius);
   }
 
+  /* The transition *name* is per book, so it is set inline above; the *class* is
+     what the rules in global.css hang off and is the same for every volume. */
+  .book__body h1,
+  .pager__title {
+    view-transition-class: vt-title;
+  }
+
   .book__cover img {
+    view-transition-class: vt-cover;
     width: 100%;
     /* The intrinsic ratio comes from the width/height attributes above, which
        are the file's real dimensions — covers are not all 2:3. */

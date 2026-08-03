@@ -67,6 +67,11 @@ const countLabel = count === 1 ? t.works.countOne : interpolate(t.works.count, {
       >
         <a href={bookPath(locale, book.id)}>
           <span class="card__cover">
+            {/* Paired with the record page's cover and heading by name, so the
+                browser lifts this one volume out of the grid on the way there
+                instead of repainting the page. Costs no JavaScript: the
+                navigation is an ordinary one, and `@view-transition` in
+                global.css is what makes the browser animate across it. */}
             <img
               src={thumbFor(book.id)}
               width="320"
@@ -74,6 +79,7 @@ const countLabel = count === 1 ? t.works.countOne : interpolate(t.works.count, {
               loading="lazy"
               decoding="async"
               alt={`${book.title} — ${book.author}`}
+              style={`view-transition-name:cover-${book.id}`}
             />
           </span>
           <span class="card__body">
@@ -84,7 +90,9 @@ const countLabel = count === 1 ? t.works.countOne : interpolate(t.works.count, {
               <span class="card__no">{String(index + 1).padStart(2, '0')}</span>
               <span class="card__year">{book.year}</span>
             </span>
-            <span class="card__title">{book.title}</span>
+            <span class="card__title" style={`view-transition-name:title-${book.id}`}>
+              {book.title}
+            </span>
             <span class="card__author">{book.author}</span>
             <span class="card__meta">{book.publisher}</span>
           </span>
@@ -221,7 +229,10 @@ const countLabel = count === 1 ? t.works.countOne : interpolate(t.works.count, {
     perspective: 900px;
   }
 
+  /* The transition *name* is per book, so it is set inline above; the *class* is
+     what the rules in global.css hang off and is the same for every card. */
   .card__cover img {
+    view-transition-class: vt-cover;
     width: 100%;
     aspect-ratio: 2 / 3;
     object-fit: cover;
@@ -268,6 +279,7 @@ const countLabel = count === 1 ? t.works.countOne : interpolate(t.works.count, {
   }
 
   .card__title {
+    view-transition-class: vt-title;
     font-size: 1rem;
     font-weight: 600;
     line-height: 1.3;

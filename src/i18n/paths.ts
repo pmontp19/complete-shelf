@@ -1,8 +1,11 @@
 import { ROUTES, type Locale, type Section } from './config';
 
 /**
- * Astro's `base` is applied by `Astro.url` but not by hand-written strings, so
- * every internal href in the project goes through these helpers.
+ * Every internal href in the project goes through these helpers, so the locale
+ * segments and the trailing slashes are decided in one place. `BASE_URL` is `/`
+ * now that the GitHub Pages sub-path is gone, but it is still read rather than
+ * assumed: Astro applies `base` to `Astro.url` and never to hand-written
+ * strings, so hard-coding it here is how that breaks quietly.
  */
 const BASE = import.meta.env.BASE_URL.replace(/\/+$/, '');
 
@@ -15,27 +18,27 @@ function join(...parts: string[]): string {
   return `${BASE}/${path}/`.replace(/\/{2,}/g, '/');
 }
 
-/** Site root, e.g. `/complete-shelf/`. Used by the language redirect page. */
+/** Site root, `/`. Used by the language redirect page. */
 export function rootPath(): string {
   return join();
 }
 
-/** Home page of a locale, e.g. `/complete-shelf/ca/`. */
+/** Home page of a locale, e.g. `/ca/`. */
 export function homePath(locale: Locale): string {
   return join(locale);
 }
 
-/** A localised section index, e.g. `/complete-shelf/es/traducciones/`. */
+/** A localised section index, e.g. `/es/traducciones/`. */
 export function sectionPath(locale: Locale, section: Section): string {
   return join(locale, ROUTES[locale][section]);
 }
 
-/** A book detail page, e.g. `/complete-shelf/ca/traduccions/l-apicultor-d-alep/`. */
+/** A book detail page, e.g. `/ca/traduccions/l-apicultor-d-alep/`. */
 export function bookPath(locale: Locale, slug: string): string {
   return join(locale, ROUTES[locale].works, slug);
 }
 
-/** Path to a file in `public/`, e.g. `/complete-shelf/covers/foo.webp`. */
+/** Path to a file in `public/`, e.g. `/covers/foo.webp`. */
 export function assetPath(relative: string): string {
   return `${BASE}/${relative.replace(/^\/+/, '')}`.replace(/([^:])\/{2,}/g, '$1/');
 }

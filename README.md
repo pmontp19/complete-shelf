@@ -20,6 +20,22 @@ languages, no backend and no third-party requests at runtime.
 
   Vertical scrolling always belongs to the page. A looping shelf has no end to escape past, so
   swallowing the wheel would strand the reader on it.
+
+  Each spine is set the way a printed one is: the author's surname at the head, the title across the
+  middle, the imprint at the foot. The canvas carries the spine's real proportions, so a volume 0.06
+  world units thick is drawn on a strip that narrow rather than on a fixed sheet stretched to fit —
+  which is what used to squash every glyph to about a third of its width. Long titles come down in
+  size rather than wrapping, and a title too long even for that gets a short form in the record
+  (`spineTitle`).
+- **View transitions between the catalogue and a record**, done by the browser across an ordinary
+  navigation. Opening a translation lifts its cover and title out of the grid and sets them down on
+  their own page; the header and footer hold still. This is `@view-transition` plus
+  `view-transition-name` in
+  [`src/styles/view-transitions.css`](src/styles/view-transitions.css) and costs no JavaScript at
+  all — Astro's `<ClientRouter />` would have added ~5.5 kB gzipped to every page and made the shelf
+  a client-side island to tear down and rebuild, for the same animation. The shelf page sits out:
+  snapshotting a live WebGL canvas is the most expensive thing here, and the shelf cannot travel
+  anyway. Browsers without the feature just navigate.
 - **Five languages** — Catalan (default), Spanish, English, German and French — with localised URL
   segments (`/ca/traduccions/`, `/de/uebersetzungen/`, …), `hreflang` alternates on every page, and a
   language switcher that keeps you on the page you were reading.
@@ -47,6 +63,9 @@ languages, no backend and no third-party requests at runtime.
     │   └── profile.ts      # biography, timeline and links, in five languages
     ├── i18n/               # locales, localised routes, UI dictionaries
     ├── lib/shelf/          # the three.js shelf, dependency-free
+    ├── styles/
+    │   ├── global.css      # the design system
+    │   └── view-transitions.css  # imported only by the pages that take part
     ├── components/
     ├── layouts/
     └── pages/
@@ -56,7 +75,7 @@ languages, no backend and no third-party requests at runtime.
 
 ```bash
 npm install
-npm run dev        # http://localhost:4321/complete-shelf/
+npm run dev        # http://localhost:4321/
 npm run build      # type-checks, then writes dist/
 npm run preview
 npm test           # drives the built site in Chromium (needs `npm run preview` running)
@@ -81,37 +100,61 @@ On Astro 7 `astro dev` starts a managed background daemon rather than holding th
    the shelf never has a hole in it.
 4. Synopses live in the record's `synopsis` object, keyed by locale. Missing locales fall back
    through Catalan → Spanish → English rather than rendering empty.
+5. The shelf's spine takes the title cut down to what a strip of type can carry: everything after the
+   first sentence break goes, as long as what is left still names the book. Add `spineTitle` to the
+   record where that rule can't win — a title that *is* one word, or one whose distinguishing half
+   comes second (“Campus Drivers 2. Nòvio perfecte” → “Nòvio perfecte”). The author line is derived,
+   never stored: surnames only, joined by · when a book has two.
 
 Everything else — the catalogue, the filters, the shelf, the sitemap, the five language versions —
 derives from that one record.
 
 ## Deployment
 
-`.github/workflows/deploy.yml` builds and publishes to GitHub Pages on every push to `main`. The
-covers are committed, so the build needs no network access.
+Vercel, on every push. It runs `npm run build`, which runs `astro check` first, so a broken
+translation key or a malformed book record fails the deploy rather than shipping. The covers are
+committed under `public/`, so the build needs no network access.
 
-### Vercel
+`site` comes from `VERCEL_PROJECT_PRODUCTION_URL`, which Vercel injects into preview builds too —
+a preview should not publish canonicals pointing at itself. There is no `base`: the site is served
+from the root of its domain.
 
-Detected automatically. Vercel serves the build at the domain root, so the
-GitHub Pages sub-path is dropped there (`base: '/'`) and `site` is taken from
-`VERCEL_PROJECT_PRODUCTION_URL`. Nothing to configure; `vercel.json` just pins
-the framework preset, the output directory and trailing slashes.
+### The bare domain
 
-Without this the site 404s on Vercel: every asset and link would be requested
-under `/complete-shelf/`, which only exists on GitHub Pages.
+Every page lives under a locale segment, so `/` is always a redirect. `vercel.json` answers it at
+the edge, with no document in between: a 307 to `/es/`, `/en/`, `/de/` or `/fr/` when that is the
+first language in the visitor's `Accept-Language`, and to `/ca/` for everyone else — crawlers
+included, since they send no `Accept-Language` and `/ca/` is the `x-default` in every `hreflang` set
+and in the sitemap.
+
+Temporary rather than permanent on purpose: the answer varies by request header, and a 308 would be
+cached by the browser for the wrong language. The trade is that `/` does not consolidate its weight
+onto `/ca/` the way a permanent redirect would; the self-canonical and the `hreflang` set on `/ca/`
+do that job instead.
+
+The match is a regex on the header, so it reads the visitor's *first* language and cannot weigh
+`q=` values: someone whose browser asks for Japanese first and German second gets Catalan, not
+German. Widening that needs real parsing at the edge, which is a runtime this site does not have.
+
+[`src/pages/index.astro`](src/pages/index.astro) is the fallback for anything serving the built
+artifact without those rules — local `astro preview`, or a plain static host: an immediate
+`<meta http-equiv="refresh">`, `noindex,follow`, an absolute canonical, the same negotiation done in
+the client, and a plain list of the five locales for anyone who has neither the refresh nor
+JavaScript. It only ships because `routing.redirectToDefaultLocale` is off — with it on, Astro
+overwrites that page with a bare *two-second* refresh of its own, unstyled and with no negotiation,
+which is what the root used to serve. `npm test` checks the root for exactly that regression.
 
 ### Publishing on her own domain
 
-`site` and `base` are read from the environment, so moving to `judithraigal.com` needs no source
-change:
+Add the domain in Vercel and `site` follows it, since Vercel injects it. To build for a domain from
+anywhere else:
 
 ```bash
-SITE_URL=https://judithraigal.com SITE_BASE=/ npm run build
+SITE_URL=https://judithraigal.com npm run build
 ```
 
 Canonicals, `hreflang` alternates, the sitemap, `robots.txt` and every internal link and image path
-follow automatically. To make it the default, set those two variables in the workflow's `build` step
-and add a `public/CNAME` file containing the bare domain.
+follow automatically.
 
 ## About the data
 

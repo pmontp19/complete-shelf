@@ -497,8 +497,11 @@ export const mountShelf: MountShelf = async (container, options) => {
       metalness: 0.02,
       transparent: true,
     });
+    // The generated spine is drawn at the proportions this volume actually has,
+    // so the type is not stretched along the reading direction.
+    const spineRatio = dimensions.depth / dimensions.height;
     if (!book.spineUrl) {
-      const generated = createSpineTexture(book);
+      const generated = createSpineTexture(book, spineRatio);
       spineMaterial.map = generated;
       spineMaterial.needsUpdate = true;
       disposables.push(generated);
@@ -566,7 +569,7 @@ export const mountShelf: MountShelf = async (container, options) => {
           spineMaterial.color.set(0xffffff);
           disposables.push(texture);
         } else {
-          const generated = createSpineTexture(book);
+          const generated = createSpineTexture(book, spineRatio);
           spineMaterial.map = generated;
           spineMaterial.color.set(0xffffff);
           disposables.push(generated);
