@@ -34,7 +34,7 @@ interface CoverMeta {
   textColor: string;
   width: number;
   height: number;
-  source: 'openlibrary' | 'googlebooks' | 'url' | 'generated';
+  source: 'openlibrary' | 'googlebooks' | 'url' | 'local' | 'generated';
 }
 
 /** Neutral tones used when the cover pipeline has not run yet. */

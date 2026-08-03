@@ -90,17 +90,28 @@ export function hslToRgb({ h, s, l }) {
 }
 
 /**
- * Take a raw dominant colour extracted from a photograph and tame it into
- * something that reads as an intentional "spine colour": a touch darker and
- * a touch less saturated than the literal pixel average, which tends to be
- * washed out or overly bright.
+ * Turn the colour a cover reads as into an intentional "spine colour".
+ *
+ * Two things matter here, and they pull in opposite directions. The spine has
+ * the book's title set on it, so the ground has to stay far enough from the
+ * type to be legible on a strip a few dozen pixels wide. But a spine also has
+ * to look like the book: a rack of near-black bricks tells the reader nothing,
+ * and it was what the old `l * 0.78` curve produced for most of this shelf.
+ *
+ * So lightness is mapped into a mid band rather than scaled towards zero —
+ * every spine lands somewhere it can be seen, still ordered by how dark its
+ * artwork was. Saturation is lifted rather than damped, because the dominant
+ * hue coming in is now a real ink instead of a washed-out average; only
+ * genuinely neutral covers are left alone, since pushing saturation into those
+ * would invent a colour the artwork doesn't have.
  */
 export function tameForSpine(rgb) {
   const hsl = rgbToHsl(rgb);
+  const saturation = hsl.s < 0.08 ? hsl.s : clamp(0.18 + hsl.s * 0.72, 0, 0.62);
   const tamed = {
     h: hsl.h,
-    s: clamp(hsl.s * 0.82, 0, 0.65),
-    l: clamp(hsl.l * 0.78, 0.12, 0.55),
+    s: saturation,
+    l: clamp(0.3 + hsl.l * 0.42, 0.3, 0.62),
   };
   return ensureReadable(hslToRgb(tamed));
 }
