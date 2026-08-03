@@ -16,8 +16,6 @@ const root = (origin: URL | string) => abs(origin, assetPath(''));
 export const personId = (origin: URL | string) => `${root(origin)}#person`;
 export const websiteId = (origin: URL | string) => `${root(origin)}#website`;
 
-const ORCID = '0000-0002-0387-0867';
-
 const URV: Node = {
   '@type': 'CollegeOrUniversity',
   name: 'Universitat Rovira i Virgili',
@@ -44,6 +42,21 @@ const IMPRINT_PARENTS: Record<string, Node> = {
   'Edicions 62': { '@type': 'Organization', name: 'Grup 62', url: 'https://www.grup62.cat/' },
 };
 
+/**
+ * The `sameAs` set: the records that identify *her*, plus her own profiles.
+ *
+ * `sameAs` asserts "this is the same thing", so it takes only the records
+ * flagged `identifies` — Grup 62 publishes her and TDX holds her thesis, and
+ * neither of them is her. Deduplicated because ORCID is both an authority and a
+ * link she lists.
+ */
+function sameAsFor(): string[] {
+  return [
+    ...PROFILE.authorities.filter((record) => record.identifies).map((record) => record.href),
+    ...PROFILE.links.map((link) => link.href),
+  ].filter((href, index, all) => all.indexOf(href) === index);
+}
+
 function publisherNode(name: string): Node {
   const parent = IMPRINT_PARENTS[name];
   return { '@type': 'Organization', name, ...(parent ? { parentOrganization: parent } : {}) };
@@ -59,19 +72,33 @@ export function personNode(locale: Locale, origin: URL | string): Node {
     name: PROFILE.name,
     givenName: 'Judith',
     familyName: 'Raigal Aran',
-    alternateName: 'Judith Raigal',
+    // The forms citations actually use. Not the bare "Judith Raigal": that one
+    // belongs to more than one person, and claiming it here would invite the
+    // merge these variants exist to prevent.
+    alternateName: PROFILE.nameVariants.slice(1),
     jobTitle: t.site.role,
     description: opening ?? t.about.metaDescription,
     url: abs(origin, homePath(locale)),
     mainEntityOfPage: { '@id': `${abs(origin, sectionPath(locale, 'about'))}#webpage` },
     ...(PROFILE.email ? { email: `mailto:${PROFILE.email}` } : {}),
-    sameAs: PROFILE.links.map((link) => link.href),
-    identifier: {
-      '@type': 'PropertyValue',
-      propertyID: 'ORCID',
-      value: ORCID,
-      url: `https://orcid.org/${ORCID}`,
-    },
+    sameAs: sameAsFor(),
+    // Two resolvable identifiers rather than one: a consumer that cannot match
+    // on ORCID may still hold the Web of Science record, and the ResearcherID is
+    // asserted from her own ORCID profile, so the pair agree by construction.
+    identifier: [
+      {
+        '@type': 'PropertyValue',
+        propertyID: 'ORCID',
+        value: PROFILE.orcid,
+        url: `https://orcid.org/${PROFILE.orcid}`,
+      },
+      {
+        '@type': 'PropertyValue',
+        propertyID: 'ResearcherID',
+        value: PROFILE.researcherId,
+        url: `https://www.webofscience.com/wos/author/record/${PROFILE.researcherId}`,
+      },
+    ],
     knowsLanguage: LOCALES.map((code) => ({
       '@type': 'Language',
       name: t.languages[code],
@@ -272,7 +299,22 @@ export function publicationNodes(locale: Locale, origin: URL | string): Node[] {
       ...(entry.with ?? []).map((name) => ({ '@type': 'Person', name })),
     ],
     isPartOf: { '@type': 'CreativeWork', name: entry.venue },
-    ...(entry.href ? { url: entry.href, sameAs: entry.href } : {}),
+    ...(entry.href ? { url: entry.href } : {}),
+    // The DOI is the citation's own identifier and resolves independently of
+    // this site, so it is what `sameAs` should carry when there is one.
+    ...(entry.doi
+      ? {
+          sameAs: `https://doi.org/${entry.doi}`,
+          identifier: {
+            '@type': 'PropertyValue',
+            propertyID: 'DOI',
+            value: entry.doi,
+            url: `https://doi.org/${entry.doi}`,
+          },
+        }
+      : entry.href
+        ? { sameAs: entry.href }
+        : {}),
     ...(entry.kind === 'thesis' ? { inSupportOf: 'PhD', sourceOrganization: URV } : {}),
   }));
 }

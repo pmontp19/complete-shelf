@@ -1,6 +1,6 @@
 ---
 import { type Locale } from '~/i18n/config';
-import { useTranslations } from '~/i18n/ui';
+import { useTranslations, interpolate } from '~/i18n/ui';
 import { PROFILE, bioFor } from '~/data/profile';
 import { ALL_BOOKS } from '~/data/books';
 import { assetPath } from '~/i18n/paths';
@@ -61,6 +61,33 @@ const firstLetterClass =
               </li>
             ))}
           </ol>
+        </section>
+      )
+    }
+
+    {/* The records other institutions keep. On the page, not just in the JSON-LD,
+        because it is one answer to two questions: a reader asking "says who?" and
+        an answer engine asking what it should cite instead of this site. */}
+    {
+      PROFILE.authorities.length > 0 && (
+        <section class="elsewhere mt-[clamp(2.5rem,6vw,4rem)] border-t border-rule pt-6">
+          <h2 class="mb-[0.75rem] font-sans text-[0.68rem] font-semibold tracking-[0.14em] text-ink-faint uppercase">
+            {t.about.elsewhere}
+          </h2>
+          <p class="mb-[1.35rem] font-sans text-[0.85rem] text-ink-soft">{t.about.elsewhereLead}</p>
+          <ul class="grid gap-4">
+            {PROFILE.authorities.map((record) => (
+              <li class="grid gap-[0.15rem] border-s-2 border-rule ps-4">
+                <a class="leading-[1.35] font-semibold" href={record.href} rel="noopener" target="_blank">
+                  {record.label}
+                </a>
+                <span class="font-sans text-[0.8rem] leading-[1.5] text-ink-faint">{record.covers}</span>
+              </li>
+            ))}
+          </ul>
+          <p class="mt-[1.35rem] font-sans text-[0.72rem] tracking-[0.04em] text-ink-faint">
+            {interpolate(t.about.elsewhereChecked, { date: PROFILE.verifiedOn })}
+          </p>
         </section>
       )
     }

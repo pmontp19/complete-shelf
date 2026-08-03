@@ -10,7 +10,7 @@ import {
   type Locale,
   type Section,
 } from '~/i18n/config';
-import { translatePath, assetPath } from '~/i18n/paths';
+import { translatePath, assetPath, markdownPath } from '~/i18n/paths';
 import { useTranslations } from '~/i18n/ui';
 import type { PageRef } from '~/i18n/page-ref';
 import {
@@ -156,6 +156,23 @@ const jsonLd = {
       href={new URL(translatePath(DEFAULT_LOCALE, page), origin).href}
     />
     <link rel="sitemap" type="application/xml" href={assetPath('sitemap.xml')} />
+
+    {/* The plain-text half of the site, discoverable from the page rather than
+        only from robots.txt. A client that wants prose instead of a WebGL canvas
+        follows the first; one that wants the whole bibliography in a single
+        request follows the second. */}
+    <link
+      rel="alternate"
+      type="text/markdown"
+      href={new URL(markdownPath(locale, page), origin).href}
+      title="Markdown"
+    />
+    <link
+      rel="alternate"
+      type="text/plain"
+      href={new URL(assetPath('llms.txt'), origin).href}
+      title="llms.txt"
+    />
 
     <meta property="og:type" content={ogType} />
     <meta property="og:site_name" content={t.site.name} />

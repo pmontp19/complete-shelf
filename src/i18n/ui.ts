@@ -49,6 +49,8 @@ export interface Dictionary {
     metaDescription: string;
   };
   book: {
+    /** Column heading for the translated title, in the Markdown catalogue table. */
+    title: string;
     originalTitle: string;
     coverAlt: string;
     author: string;
@@ -78,6 +80,12 @@ export interface Dictionary {
     lead: string;
     /** Heading over the academic-publication list. */
     research: string;
+    /** Heading over the records other institutions hold about her. */
+    elsewhere: string;
+    /** One line saying why that list is on the page and what it settles. */
+    elsewhereLead: string;
+    /** When those records were last opened and checked. Takes `{date}`. */
+    elsewhereChecked: string;
     /** Alt text for the portrait, if one is supplied. */
     portraitAlt: string;
     metaDescription: string;
@@ -151,6 +159,7 @@ const ca: Dictionary = {
       'Catàleg complet de les traduccions literàries de Judith Raigal Aran, amb editorial, any i ISBN.',
   },
   book: {
+    title: 'Títol',
     originalTitle: 'Títol original',
     coverAlt: 'Coberta de {title}, de {author}',
     author: 'Autoria',
@@ -190,6 +199,10 @@ const ca: Dictionary = {
     title: 'Biografia',
     lead: 'Traductora literària i docent universitària.',
     research: 'Recerca i publicacions',
+    elsewhere: 'Registres externs',
+    elsewhereLead:
+      'Aquestes institucions mantenen les seves pròpies fitxes sobre aquesta feina. Són independents d’aquest web i, per a tot allò que cobreixen, en són una font millor.',
+    elsewhereChecked: 'Comprovats el {date}.',
     portraitAlt: 'Retrat de Judith Raigal Aran',
     metaDescription:
       'Biografia professional de Judith Raigal Aran, traductora literària i docent a la URV i la UPF.',
@@ -299,6 +312,7 @@ const es: Dictionary = {
       'Catálogo completo de las traducciones literarias de Judith Raigal Aran, con editorial, año e ISBN.',
   },
   book: {
+    title: 'Título',
     originalTitle: 'Título original',
     coverAlt: 'Cubierta de {title}, de {author}',
     author: 'Autoría',
@@ -338,6 +352,10 @@ const es: Dictionary = {
     title: 'Biografía',
     lead: 'Traductora literaria y docente universitaria.',
     research: 'Investigación y publicaciones',
+    elsewhere: 'Registros externos',
+    elsewhereLead:
+      'Estas instituciones mantienen sus propias fichas sobre este trabajo. Son independientes de esta web y, para todo lo que cubren, son una fuente mejor.',
+    elsewhereChecked: 'Comprobados el {date}.',
     portraitAlt: 'Retrato de Judith Raigal Aran',
     metaDescription:
       'Biografía profesional de Judith Raigal Aran, traductora literaria y docente en la URV y la UPF.',
@@ -447,6 +465,7 @@ const en: Dictionary = {
       'The complete catalogue of literary translations by Judith Raigal Aran, with publisher, year and ISBN.',
   },
   book: {
+    title: 'Title',
     originalTitle: 'Original title',
     coverAlt: 'Cover of {title} by {author}',
     author: 'Author',
@@ -486,6 +505,10 @@ const en: Dictionary = {
     title: 'Biography',
     lead: 'Literary translator and university lecturer.',
     research: 'Research and publications',
+    elsewhere: 'Records held elsewhere',
+    elsewhereLead:
+      'These institutions keep their own records of this work. They are independent of this site and, for anything they cover, a better source than it.',
+    elsewhereChecked: 'Last checked {date}.',
     portraitAlt: 'Portrait of Judith Raigal Aran',
     metaDescription:
       'Professional biography of Judith Raigal Aran, literary translator and lecturer at URV and UPF.',
@@ -595,6 +618,7 @@ const de: Dictionary = {
       'Vollständiger Katalog der literarischen Übersetzungen von Judith Raigal Aran, mit Verlag, Jahr und ISBN.',
   },
   book: {
+    title: 'Titel',
     originalTitle: 'Originaltitel',
     coverAlt: 'Buchumschlag von {title} von {author}',
     author: 'Autorin oder Autor',
@@ -635,6 +659,10 @@ const de: Dictionary = {
     title: 'Biografie',
     lead: 'Literaturübersetzerin und Universitätsdozentin.',
     research: 'Forschung und Publikationen',
+    elsewhere: 'Externe Nachweise',
+    elsewhereLead:
+      'Diese Einrichtungen führen eigene Nachweise über diese Arbeit. Sie sind von dieser Website unabhängig und für alles, was sie abdecken, die bessere Quelle.',
+    elsewhereChecked: 'Geprüft am {date}.',
     portraitAlt: 'Porträt von Judith Raigal Aran',
     metaDescription:
       'Berufliche Biografie von Judith Raigal Aran, Literaturübersetzerin und Dozentin an der URV und der UPF.',
@@ -744,6 +772,7 @@ const fr: Dictionary = {
       'Catalogue complet des traductions littéraires de Judith Raigal Aran, avec éditeur, année et ISBN.',
   },
   book: {
+    title: 'Titre',
     originalTitle: 'Titre original',
     coverAlt: 'Couverture de {title}, de {author}',
     author: 'Auteur ou autrice',
@@ -784,6 +813,10 @@ const fr: Dictionary = {
     title: 'Biographie',
     lead: 'Traductrice littéraire et enseignante universitaire.',
     research: 'Recherche et publications',
+    elsewhere: 'Notices externes',
+    elsewhereLead:
+      'Ces institutions tiennent leurs propres notices sur ce travail. Elles sont indépendantes de ce site et, pour tout ce qu’elles couvrent, constituent une meilleure source.',
+    elsewhereChecked: 'Vérifiées le {date}.',
     portraitAlt: 'Portrait de Judith Raigal Aran',
     metaDescription:
       'Biographie professionnelle de Judith Raigal Aran, traductrice littéraire et enseignante à l’URV et à l’UPF.',
