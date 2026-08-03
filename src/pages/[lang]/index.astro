@@ -43,15 +43,19 @@ const facts = [
   tint={tint}
   wide
 >
-  <section class="hero">
-    <div class="shell hero__inner">
-      <p class="hero__tagline">{t.site.tagline}</p>
-      <div class="hero__masthead">
-        <h1 class="display hero__name">{t.site.name}</h1>
-        <div class="hero__standfirst">
-          <p class="lead hero__lead">{t.home.heroLead}</p>
-          <p class="hero__hint">
-            <span class="hero__hint-mark" aria-hidden="true"></span>
+  <section class="pt-[clamp(2rem,5vw,3.75rem)] pb-[clamp(1.5rem,3.5vw,2.75rem)]">
+    <div class="shell">
+      <p class="mb-[clamp(1rem,3vw,1.75rem)] max-w-[34ch] border-b border-rule pb-[clamp(1rem,3vw,1.75rem)] font-sans text-[length:var(--label-size)] font-semibold tracking-[var(--label-tracking)] text-ink-faint uppercase">
+        {t.site.tagline}
+      </p>
+      <div class="grid items-end gap-[clamp(1rem,3vw,3rem)] lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,1fr)]">
+        <h1 class="m-0 max-w-[14ch] text-[clamp(2.5rem,1.1rem+5.2vw,5.25rem)] leading-[0.98] font-semibold tracking-[-0.035em] text-balance">
+          {t.site.name}
+        </h1>
+        <div class="pb-[0.35rem]">
+          <p class="lead mb-[1.1rem] max-w-[38ch]">{t.home.heroLead}</p>
+          <p class="m-0 flex max-w-[34ch] items-baseline gap-[0.65rem] font-sans text-[0.78rem] leading-[1.6] tracking-[0.02em] text-ink-faint">
+            <span class="h-2 w-2 flex-none -translate-y-[0.1em] bg-[var(--tint)]" aria-hidden="true"></span>
             {t.home.shelfHint}
           </p>
         </div>
@@ -61,19 +65,24 @@ const facts = [
 
   <Shelf locale={locale} />
 
-  <section class="shell colophon" data-reveal>
-    <dl class="colophon__facts">
+  <section
+    class="shell grid gap-[clamp(1.75rem,4vw,3rem)] py-[clamp(1.75rem,4vw,3rem)] pb-[clamp(3rem,7vw,5rem)] min-[62rem]:grid-cols-[minmax(0,1fr)_auto] min-[62rem]:items-end"
+    data-reveal
+  >
+    <dl class="m-0 grid grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))] gap-x-[clamp(1.5rem,4vw,3rem)] gap-y-6">
       {
         facts.map((fact) => (
-          <div class="colophon__fact">
-            <dt>{fact.label}</dt>
-            <dd>{fact.value}</dd>
+          <div class="border-t border-rule pt-[0.85rem]">
+            <dt class="mb-[0.35rem] font-sans text-[length:var(--label-size)] tracking-[var(--label-tracking)] text-ink-faint uppercase">
+              {fact.label}
+            </dt>
+            <dd class="m-0 text-[1.05rem] leading-[1.35] tabular-nums">{fact.value}</dd>
           </div>
         ))
       }
     </dl>
 
-    <div class="colophon__actions">
+    <div class="flex flex-wrap gap-3">
       <a class="button" href={sectionPath(locale, 'works')}>
         {t.home.ctaWorks}
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" class="button__arrow">
@@ -84,128 +93,3 @@ const facts = [
     </div>
   </section>
 </BaseLayout>
-
-<style>
-  /* --- hero ---------------------------------------------------------------- */
-
-  .hero {
-    /* Deliberately restrained at the top: the shelf has to break the fold on a
-       laptop, or the page reads as a title card with something hidden below it. */
-    padding-block: clamp(2rem, 5vw, 3.75rem) clamp(1.5rem, 3.5vw, 2.75rem);
-  }
-
-  .hero__tagline {
-    font-family: var(--font-sans);
-    font-size: var(--label-size);
-    font-weight: 600;
-    letter-spacing: var(--label-tracking);
-    text-transform: uppercase;
-    color: var(--ink-faint);
-    max-width: 34ch;
-    margin: 0 0 clamp(1rem, 3vw, 1.75rem);
-    padding-bottom: clamp(1rem, 3vw, 1.75rem);
-    border-bottom: 1px solid var(--rule);
-  }
-
-  /* Masthead and standfirst, set the way a magazine sets them: the name holds
-     the left, the standfirst hangs off its baseline on the right. */
-  .hero__masthead {
-    display: grid;
-    gap: clamp(1rem, 3vw, 3rem);
-    align-items: end;
-  }
-
-  @media (min-width: 56rem) {
-    .hero__masthead {
-      grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 1fr);
-    }
-  }
-
-  .hero__name {
-    /* The one line on the site allowed to be this big. */
-    max-width: 14ch;
-    font-size: clamp(2.5rem, 1.1rem + 5.2vw, 5.25rem);
-    margin-bottom: 0;
-  }
-
-  .hero__standfirst {
-    padding-bottom: 0.35rem;
-  }
-
-  .hero__lead {
-    margin: 0 0 1.1rem;
-    max-width: 38ch;
-  }
-
-  .hero__hint {
-    display: flex;
-    align-items: baseline;
-    gap: 0.65rem;
-    margin: 0;
-    font-family: var(--font-sans);
-    font-size: 0.78rem;
-    line-height: 1.6;
-    letter-spacing: 0.02em;
-    color: var(--ink-faint);
-    max-width: 34ch;
-  }
-
-  /* A small tinted square: the only ornament on the page, and it carries the
-     colour of whichever volume is centred. */
-  .hero__hint-mark {
-    flex: none;
-    width: 0.5rem;
-    height: 0.5rem;
-    background: var(--tint);
-    transform: translateY(-0.1em);
-  }
-
-  /* --- colophon ------------------------------------------------------------ */
-
-  .colophon {
-    display: grid;
-    gap: clamp(1.75rem, 4vw, 3rem);
-    padding-block: clamp(1.75rem, 4vw, 3rem) clamp(3rem, 7vw, 5rem);
-  }
-
-  @media (min-width: 62rem) {
-    .colophon {
-      grid-template-columns: minmax(0, 1fr) auto;
-      align-items: end;
-    }
-  }
-
-  .colophon__facts {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
-    gap: 1.5rem clamp(1.5rem, 4vw, 3rem);
-    margin: 0;
-  }
-
-  .colophon__fact {
-    padding-top: 0.85rem;
-    border-top: 1px solid var(--rule);
-  }
-
-  .colophon__fact dt {
-    font-family: var(--font-sans);
-    font-size: var(--label-size);
-    letter-spacing: var(--label-tracking);
-    text-transform: uppercase;
-    color: var(--ink-faint);
-    margin-bottom: 0.35rem;
-  }
-
-  .colophon__fact dd {
-    margin: 0;
-    font-size: 1.05rem;
-    line-height: 1.35;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .colophon__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-  }
-</style>

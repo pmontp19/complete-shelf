@@ -207,7 +207,7 @@ const jsonLd = {
     {/* tabindex="-1" so the skip link actually moves focus here, not just the
         scroll position. `:focus-visible` never matches programmatic focus, so
         this adds no stray outline. */}
-    <main id="main" tabindex="-1" class={wide ? 'main main--wide' : 'main'}>
+    <main id="main" tabindex="-1" class={wide ? undefined : 'shell'}>
       <slot />
     </main>
     <SiteFooter locale={locale} />
@@ -229,10 +229,3 @@ const jsonLd = {
     </script>
   </body>
 </html>
-
-<style>
-  .main:not(.main--wide) {
-    width: min(100% - var(--gutter) * 2, var(--shell));
-    margin-inline: auto;
-  }
-</style>

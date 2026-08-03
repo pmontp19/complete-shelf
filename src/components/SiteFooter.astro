@@ -18,109 +18,36 @@ const links = SECTIONS.map((section) => ({
 }));
 ---
 
-<footer class="footer">
-  <div class="shell footer__inner">
-    <div class="footer__identity">
-      <a class="footer__name" href={homePath(locale)}>{t.site.name}</a>
-      <p class="footer__role">{t.site.role}</p>
+<footer class="footer mt-[clamp(3rem,8vw,6rem)] border-t border-rule bg-paper-sunk pt-[clamp(2rem,5vw,3.25rem)] pb-[clamp(1.25rem,3vw,2rem)]">
+  <div class="shell grid items-start gap-[clamp(1.75rem,4vw,3rem)] md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1.4fr)]">
+    <div>
+      <a class="text-[1.05rem] font-semibold tracking-[-0.01em] no-underline" href={homePath(locale)}>
+        {t.site.name}
+      </a>
+      <p class="mt-[0.15rem] font-sans text-[0.7rem] tracking-[0.15em] text-ink-faint uppercase">{t.site.role}</p>
     </div>
 
-    <nav class="footer__nav" aria-label={t.a11y.mainNav}>
-      <ul>
-        {links.map((link) => <li><a href={link.href}>{link.label}</a></li>)}
+    <nav aria-label={t.a11y.mainNav}>
+      <ul class="grid gap-[0.4rem]">
+        {
+          links.map((link) => (
+            <li>
+              <a class="font-sans text-[0.85rem] text-ink-soft no-underline hover:text-ink" href={link.href}>
+                {link.label}
+              </a>
+            </li>
+          ))
+        }
       </ul>
     </nav>
 
-    <div class="footer__notes">
-      <p class="footer__note">{t.footer.coverNotice}</p>
-      <p class="footer__note">{t.footer.colophon}</p>
+    <div class="grid gap-[0.5rem]">
+      <p class="m-0 max-w-[58ch] font-sans text-[0.75rem] leading-[1.6] text-ink-faint">{t.footer.coverNotice}</p>
+      <p class="m-0 max-w-[58ch] font-sans text-[0.75rem] leading-[1.6] text-ink-faint">{t.footer.colophon}</p>
     </div>
   </div>
 
-  <div class="shell footer__baseline">
-    <p>© {year} {t.site.name}. {t.footer.rights}</p>
+  <div class="shell mt-[clamp(1.75rem,4vw,2.75rem)] border-t border-rule pt-4">
+    <p class="m-0 font-sans text-[0.75rem] text-ink-faint">© {year} {t.site.name}. {t.footer.rights}</p>
   </div>
 </footer>
-
-<style>
-  .footer {
-    margin-top: clamp(3rem, 8vw, 6rem);
-    border-top: 1px solid var(--rule);
-    background: var(--paper-sunk);
-    padding-block: clamp(2rem, 5vw, 3.25rem) clamp(1.25rem, 3vw, 2rem);
-  }
-
-  .footer__inner {
-    display: grid;
-    gap: clamp(1.75rem, 4vw, 3rem);
-    align-items: start;
-  }
-
-  @media (min-width: 48rem) {
-    .footer__inner {
-      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.4fr);
-    }
-  }
-
-  .footer__name {
-    font-size: 1.05rem;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    text-decoration: none;
-  }
-
-  .footer__role {
-    margin: 0.15rem 0 0;
-    font-family: var(--font-sans);
-    font-size: var(--label-size);
-    letter-spacing: var(--label-tracking);
-    text-transform: uppercase;
-    color: var(--ink-faint);
-  }
-
-  .footer__nav ul {
-    display: grid;
-    gap: 0.4rem;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-
-  .footer__nav a {
-    font-family: var(--font-sans);
-    font-size: 0.85rem;
-    color: var(--ink-soft);
-    text-decoration: none;
-  }
-
-  .footer__nav a:hover {
-    color: var(--ink);
-  }
-
-  .footer__notes {
-    display: grid;
-    gap: 0.5rem;
-  }
-
-  .footer__note {
-    margin: 0;
-    max-width: 58ch;
-    font-family: var(--font-sans);
-    font-size: 0.75rem;
-    line-height: 1.6;
-    color: var(--ink-faint);
-  }
-
-  .footer__baseline {
-    margin-top: clamp(1.75rem, 4vw, 2.75rem);
-    padding-top: 1rem;
-    border-top: 1px solid var(--rule);
-  }
-
-  .footer__baseline p {
-    margin: 0;
-    font-family: var(--font-sans);
-    font-size: 0.75rem;
-    color: var(--ink-faint);
-  }
-</style>

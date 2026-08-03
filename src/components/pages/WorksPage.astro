@@ -13,6 +13,9 @@ const t = useTranslations(locale);
 
 const count = ALL_BOOKS.length;
 const countLabel = count === 1 ? t.works.countOne : interpolate(t.works.count, { count });
+
+const chipClass =
+  'rounded-full border border-rule px-3 py-[0.3rem] font-sans text-[0.78rem] text-ink-soft transition-all duration-[160ms] ease-brand hover:border-ink-faint hover:text-ink [&.chip--on]:border-ink [&.chip--on]:bg-ink [&.chip--on]:text-paper [&.chip--on]:hover:border-[color-mix(in_srgb,var(--color-ink)_85%,var(--color-paper))] [&.chip--on]:hover:bg-[color-mix(in_srgb,var(--color-ink)_85%,var(--color-paper))]';
 ---
 
 <div class="page-head">
@@ -23,29 +26,33 @@ const countLabel = count === 1 ? t.works.countOne : interpolate(t.works.count, {
 
 {
   count > 0 && (
-    <div class="filters" data-filters>
-      <fieldset>
-        <legend>{t.works.filterLanguage}</legend>
-        <div class="chips">
-          <button type="button" class="chip chip--on" data-filter="language" data-value="all">
+    <div class="mb-[clamp(1.75rem,4vw,3rem)] flex flex-wrap gap-[clamp(1rem,3vw,2.5rem)] border-y border-rule py-5" data-filters>
+      <fieldset class="min-w-0">
+        <legend class="mb-[0.55rem] font-sans text-[0.72rem] tracking-[0.14em] text-ink-faint uppercase">
+          {t.works.filterLanguage}
+        </legend>
+        <div class="flex flex-wrap gap-[0.35rem]">
+          <button type="button" class:list={[chipClass, 'chip chip--on']} data-filter="language" data-value="all">
             {t.works.filterAll}
           </button>
           {SOURCE_LANGUAGES.map((code) => (
-            <button type="button" class="chip" data-filter="language" data-value={code}>
+            <button type="button" class:list={[chipClass, 'chip']} data-filter="language" data-value={code}>
               {t.languages[code]}
             </button>
           ))}
         </div>
       </fieldset>
 
-      <fieldset>
-        <legend>{t.works.filterCategory}</legend>
-        <div class="chips">
-          <button type="button" class="chip chip--on" data-filter="category" data-value="all">
+      <fieldset class="min-w-0">
+        <legend class="mb-[0.55rem] font-sans text-[0.72rem] tracking-[0.14em] text-ink-faint uppercase">
+          {t.works.filterCategory}
+        </legend>
+        <div class="flex flex-wrap gap-[0.35rem]">
+          <button type="button" class:list={[chipClass, 'chip chip--on']} data-filter="category" data-value="all">
             {t.works.filterAll}
           </button>
           {CATEGORIES.map((code) => (
-            <button type="button" class="chip" data-filter="category" data-value={code}>
+            <button type="button" class:list={[chipClass, 'chip']} data-filter="category" data-value={code}>
               {t.categories[code]}
             </button>
           ))}
@@ -55,7 +62,10 @@ const countLabel = count === 1 ? t.works.countOne : interpolate(t.works.count, {
   )
 }
 
-<ul class="catalogue" data-catalogue>
+<ul
+  class="m-0 mb-12 grid grid-cols-[repeat(auto-fill,minmax(min(100%,11rem),1fr))] gap-x-[clamp(1.25rem,3vw,2.25rem)] gap-y-[clamp(1.5rem,4vw,3rem)]"
+  data-catalogue
+>
   {
     ALL_BOOKS.map((book, index) => (
       <li
@@ -65,14 +75,15 @@ const countLabel = count === 1 ? t.works.countOne : interpolate(t.works.count, {
         data-reveal
         style={`--tint:${paletteFor(book.id).spineColor};--reveal-delay:${Math.min(index, 5) * 40}ms;`}
       >
-        <a href={bookPath(locale, book.id)}>
-          <span class="card__cover">
+        <a class="group grid h-full gap-[0.9rem] no-underline" href={bookPath(locale, book.id)}>
+          <span class="block [perspective:900px]">
             {/* Paired with the record page's cover and heading by name, so the
                 browser lifts this one volume out of the grid on the way there
                 instead of repainting the page. Costs no JavaScript: the
                 navigation is an ordinary one, and `@view-transition` in
-                global.css is what makes the browser animate across it. */}
+                view-transitions.css is what makes the browser animate across it. */}
             <img
+              class="[view-transition-class:vt-cover] aspect-[2/3] w-full rounded-[2px] object-cover shadow-md transition-[transform,box-shadow] duration-[320ms] ease-out group-hover:-translate-y-[6px] group-hover:rotate-x-[3deg] group-hover:scale-[1.012] group-hover:shadow-[0_8px_18px_rgb(30_26_22/0.13),0_26px_56px_color-mix(in_srgb,var(--tint)_34%,transparent)] group-focus-visible:-translate-y-[6px] group-focus-visible:rotate-x-[3deg] group-focus-visible:scale-[1.012] group-focus-visible:shadow-[0_8px_18px_rgb(30_26_22/0.13),0_26px_56px_color-mix(in_srgb,var(--tint)_34%,transparent)]"
               src={thumbFor(book.id)}
               width="320"
               height="480"
@@ -83,19 +94,22 @@ const countLabel = count === 1 ? t.works.countOne : interpolate(t.works.count, {
               style={`view-transition-name:cover-${book.id}`}
             />
           </span>
-          <span class="card__body">
+          <span class="grid content-start gap-[0.1rem]">
             {/* Catalogue numbers run over the whole bibliography, not over
                 whatever the filters have left standing — they are the volume's
                 number, not its position in the current view. */}
-            <span class="card__index">
-              <span class="card__no">{String(index + 1).padStart(2, '0')}</span>
-              <span class="card__year">{book.year}</span>
+            <span class="mb-[0.45rem] flex items-baseline justify-between gap-[0.5rem] border-b border-rule pb-[0.4rem] font-sans text-[0.66rem] tracking-[0.14em] text-ink-faint tabular-nums transition-colors duration-[240ms] ease-brand group-hover:border-b-[var(--tint)]">
+              <span class="text-ink">{String(index + 1).padStart(2, '0')}</span>
+              <span>{book.year}</span>
             </span>
-            <span class="card__title" style={`view-transition-name:title-${book.id}`}>
+            <span
+              class="[view-transition-class:vt-title] text-[1rem] leading-[1.3] font-semibold"
+              style={`view-transition-name:title-${book.id}`}
+            >
               {book.title}
             </span>
-            <span class="card__author">{book.author}</span>
-            <span class="card__meta">{book.publisher}</span>
+            <span class="font-sans text-[0.78rem] text-ink-soft">{book.author}</span>
+            <span class="mt-[0.2rem] font-sans text-[0.7rem] text-ink-faint">{book.publisher}</span>
           </span>
         </a>
       </li>
@@ -103,7 +117,7 @@ const countLabel = count === 1 ? t.works.countOne : interpolate(t.works.count, {
   }
 </ul>
 
-<p class="empty" data-empty hidden>{t.works.empty}</p>
+<p class="font-sans py-8 text-ink-faint" data-empty hidden>{t.works.empty}</p>
 
 <script>
   const root = document.querySelector<HTMLElement>('[data-filters]');
@@ -142,166 +156,3 @@ const countLabel = count === 1 ? t.works.countOne : interpolate(t.works.count, {
     }
   }
 </script>
-
-<style>
-  .filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: clamp(1rem, 3vw, 2.5rem);
-    padding-block: 1.25rem;
-    border-block: 1px solid var(--rule);
-    margin-bottom: clamp(1.75rem, 4vw, 3rem);
-  }
-
-  fieldset {
-    border: 0;
-    margin: 0;
-    padding: 0;
-    min-width: 0;
-  }
-
-  legend {
-    font-family: var(--font-sans);
-    font-size: 0.72rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--ink-faint);
-    padding: 0;
-    margin-bottom: 0.55rem;
-  }
-
-  .chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-  }
-
-  .chip {
-    font-family: var(--font-sans);
-    font-size: 0.78rem;
-    padding: 0.3rem 0.75rem;
-    border: 1px solid var(--rule);
-    border-radius: 999px;
-    background: transparent;
-    color: var(--ink-soft);
-    cursor: pointer;
-    transition: all 160ms var(--ease);
-  }
-
-  /* `:not(.chip--on)` matters: `.chip:hover` outspecifies `.chip--on`, so
-     without it hovering the active chip painted var(--ink) text on a
-     var(--ink) background and the label vanished. */
-  .chip:hover:not(.chip--on) {
-    border-color: var(--ink-faint);
-    color: var(--ink);
-  }
-
-  .chip--on {
-    background: var(--ink);
-    border-color: var(--ink);
-    color: var(--paper);
-  }
-
-  .chip--on:hover {
-    background: color-mix(in srgb, var(--ink) 85%, var(--paper));
-    border-color: color-mix(in srgb, var(--ink) 85%, var(--paper));
-  }
-
-  .catalogue {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr));
-    gap: clamp(1.5rem, 4vw, 3rem) clamp(1.25rem, 3vw, 2.25rem);
-    list-style: none;
-    margin: 0 0 3rem;
-    padding: 0;
-  }
-
-  .card a {
-    display: grid;
-    gap: 0.9rem;
-    text-decoration: none;
-    height: 100%;
-  }
-
-  /* The cover is a physical object on the page: it stands slightly proud, and
-     the shadow it throws carries its own dominant colour. */
-  .card__cover {
-    display: block;
-    perspective: 900px;
-  }
-
-  /* The transition *name* is per book, so it is set inline above; the *class* is
-     what the rules in global.css hang off and is the same for every card. */
-  .card__cover img {
-    view-transition-class: vt-cover;
-    width: 100%;
-    aspect-ratio: 2 / 3;
-    object-fit: cover;
-    border-radius: 2px;
-    box-shadow: var(--shadow-md);
-    transition: transform 320ms var(--ease-out), box-shadow 320ms var(--ease-out);
-  }
-
-  .card a:hover .card__cover img,
-  .card a:focus-visible .card__cover img {
-    transform: translateY(-6px) rotateX(3deg) scale(1.012);
-    box-shadow: 0 8px 18px rgb(30 26 22 / 0.13), 0 26px 56px
-      color-mix(in srgb, var(--tint) 34%, transparent);
-  }
-
-  .card__body {
-    display: grid;
-    gap: 0.1rem;
-    align-content: start;
-  }
-
-  .card__index {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 0.5rem;
-    padding-bottom: 0.4rem;
-    margin-bottom: 0.45rem;
-    border-bottom: 1px solid var(--rule);
-    font-family: var(--font-sans);
-    font-size: 0.66rem;
-    letter-spacing: 0.14em;
-    font-variant-numeric: tabular-nums;
-    color: var(--ink-faint);
-    transition: border-color 240ms var(--ease);
-  }
-
-  .card a:hover .card__index {
-    border-bottom-color: var(--tint);
-  }
-
-  .card__no {
-    color: var(--ink);
-  }
-
-  .card__title {
-    view-transition-class: vt-title;
-    font-size: 1rem;
-    font-weight: 600;
-    line-height: 1.3;
-  }
-
-  .card__author {
-    font-family: var(--font-sans);
-    font-size: 0.78rem;
-    color: var(--ink-soft);
-  }
-
-  .card__meta {
-    font-family: var(--font-sans);
-    font-size: 0.7rem;
-    color: var(--ink-faint);
-    margin-top: 0.2rem;
-  }
-
-  .empty {
-    font-family: var(--font-sans);
-    color: var(--ink-faint);
-    padding-block: 2rem;
-  }
-</style>
