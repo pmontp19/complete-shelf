@@ -314,6 +314,97 @@ console.log('\n# seo');
   if (/hreflang="[a-z]{2}-[A-Z]{2}"/.test(sitemap)) fail('sitemap uses region-locked hreflang tags');
   if (!/hreflang="x-default"/.test(sitemap)) fail('sitemap has no x-default');
 
+  // --- the identifiers, in llms.txt and in the graph ---
+  // These are the whole reason the file is worth fetching: without them a reader
+  // has only a name to match on, and the name is ambiguous.
+  for (const needle of ['0000-0002-0387-0867', 'R-7416-2018', 'dialnet', 'todostuslibros', 'openlibrary']) {
+    if (!llms.toLowerCase().includes(needle.toLowerCase())) {
+      fail(`llms.txt never mentions ${needle}`);
+    }
+  }
+  // The variant Crossref uses on two of her publications; a bibliography search
+  // that knows only the unhyphenated form comes back short.
+  if (!llms.includes('Judith Raigal-Aran')) fail('llms.txt omits the hyphenated name variant');
+  else ok('llms.txt carries the identifiers and both name forms');
+
+  for (const section of ['## Records held elsewhere', '## Known disagreements']) {
+    if (!llms.includes(section)) fail(`llms.txt has no "${section}" section`);
+    if (!full.includes(section)) fail(`llms-full.txt has no "${section}" section`);
+  }
+  // `## Optional` is the one reserved heading in the llms.txt format — a client
+  // on a budget skips it, which only works if nothing load-bearing follows.
+  const headings = [...llms.matchAll(/^## (.+)$/gm)].map((m) => m[1]);
+  if (headings.at(-1) !== 'Optional') {
+    fail(`llms.txt: "## Optional" must come last, found "${headings.at(-1)}"`);
+  } else ok(`llms.txt sections: ${headings.join(', ')}`);
+
+  // --- the Markdown mirrors ---
+  // The origin the artifact was *built* for is not the one it is served from, so
+  // absolute links have to be rebased before they can be fetched. Filtering on
+  // BASE instead would quietly match nothing and pass.
+  const builtOrigin = new URL(robots.match(/^Sitemap:\s*(\S+)$/m)[1]).origin;
+  const rebase = (url) => `${BASE}${new URL(url).pathname}`;
+
+  const MIRRORS = [
+    'ca/index.md',
+    'ca/traduccions.md',
+    'ca/biografia.md',
+    'ca/contacte.md',
+    'en/translations/la-casa-alemanya.md',
+    'de/uebersetzungen/la-casa-alemanya.md',
+  ];
+  for (const path of MIRRORS) {
+    const res = await fetch(`${BASE}/${path}`).catch(() => null);
+    if (!res?.ok) {
+      fail(`${path} not served (${res?.status ?? 'no response'})`);
+      continue;
+    }
+    const body = await res.text();
+    const type = res.headers.get('content-type') ?? '';
+    // `.md` and a trailing slash are one typo apart in the route config, and the
+    // wrong one silently serves the HTML page under a Markdown name.
+    if (!/text\/markdown/.test(type)) fail(`${path} served as "${type}", expected text/markdown`);
+    else if (/<html|<!doctype/i.test(body)) fail(`${path} returned HTML`);
+    else if (!body.startsWith('---\n')) fail(`${path} has no front matter`);
+    else ok(path);
+  }
+
+  {
+    const home = await text('ca/index.md');
+    const missing = books.filter((book) => !home.includes(book.isbn));
+    if (missing.length) fail(`the home mirror omits ${missing.length} record(s)`);
+    else ok(`home mirror carries all ${EXPECTED} records the shelf shows`);
+
+    const record = await text('de/uebersetzungen/la-casa-alemanya.md');
+    for (const needle of ['9788466424912', 'Deutsches Haus', 'Annette Hess', 'grup62.cat']) {
+      if (!record.includes(needle)) fail(`book mirror missing "${needle}"`);
+    }
+    if (!record.includes(`translator_orcid: "0000-0002-0387-0867"`)) {
+      fail('book mirror front matter has no translator ORCID');
+    } else ok('book mirror carries the edition, its sources and the ORCID');
+
+    const bio = await text('ca/biografia.md');
+    if (!bio.includes('10.1075/btl.160.06pym')) fail('biography mirror resolves no DOIs');
+    else ok('biography mirror cites DOIs');
+  }
+
+  // Every internal link in llms.txt must resolve: an index pointing at pages that
+  // no longer exist is worse than no index.
+  {
+    const urls = [...new Set([...llms.matchAll(/\]\((https?:\/\/[^)]+)\)/g)].map((m) => m[1]))];
+    const internal = urls.filter((url) => url.startsWith(builtOrigin));
+    if (internal.length < EXPECTED) {
+      fail(`llms.txt yielded only ${internal.length} internal links, expected ${EXPECTED}+`);
+    }
+    const dead = [];
+    for (const url of internal) {
+      const res = await fetch(rebase(url)).catch(() => null);
+      if (!res?.ok) dead.push(`${url} (${res?.status ?? 'no response'})`);
+    }
+    if (dead.length) fail(`llms.txt links to ${dead.length} dead URL(s): ${dead.join(', ')}`);
+    else ok(`${internal.length} internal llms.txt links resolve`);
+  }
+
   const PAGES = [
     ['ca/', 'home'],
     ['ca/traduccions/', 'works'],
@@ -356,6 +447,19 @@ console.log('\n# seo');
     const description = one(/<meta name="description" content="([^"]*)"/g, 'description');
     if (!description) fail(`${label}: empty meta description`);
 
+    const mirror = one(
+      /<link rel="alternate" type="text\/markdown" href="([^"]+)"/g,
+      'markdown alternate',
+    );
+    if (mirror && !mirror.endsWith('.md')) fail(`${label}: markdown alternate is not a .md URL`);
+    if (mirror) {
+      const res = await fetch(`${BASE}${new URL(mirror).pathname}`).catch(() => null);
+      if (!res?.ok) fail(`${label}: the advertised markdown mirror 404s (${mirror})`);
+    }
+    if (!/<link rel="alternate" type="text\/plain"[^>]+llms\.txt"/.test(html)) {
+      fail(`${label}: head does not point at llms.txt`);
+    }
+
     const blocks = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
     if (blocks.length !== 1) {
       fail(`${label}: expected one JSON-LD block, found ${blocks.length}`);
@@ -379,6 +483,26 @@ console.log('\n# seo');
     if (!person?.['@id']?.endsWith('#person')) fail(`${label}: no Person with a stable @id`);
     if (!person?.sameAs?.some((href) => href.includes('orcid.org'))) {
       fail(`${label}: the Person node carries no ORCID`);
+    }
+    // Independent registries, so a consumer can check the identity against
+    // something this site does not control.
+    for (const host of ['dialnet.unirioja.es', 'todostuslibros.com', 'openlibrary.org']) {
+      if (!person?.sameAs?.some((href) => href.includes(host))) {
+        fail(`${label}: the Person node does not link ${host}`);
+      }
+    }
+    const ids = [].concat(person?.identifier ?? []).map((entry) => entry.propertyID);
+    if (!ids.includes('ORCID') || !ids.includes('ResearcherID')) {
+      fail(`${label}: Person identifiers are ${ids.join(',') || 'absent'}`);
+    }
+    // The bare "Judith Raigal" belongs to more than one person; claiming it as
+    // an alternate name invites the merge the variants exist to prevent.
+    const names = [].concat(person?.alternateName ?? []);
+    if (names.includes('Judith Raigal')) {
+      fail(`${label}: Person claims the ambiguous bare name as an alternateName`);
+    }
+    if (!names.includes('Judith Raigal-Aran')) {
+      fail(`${label}: Person omits the hyphenated form two publishers cite her under`);
     }
     if (byType('WebSite').length !== 1) fail(`${label}: expected exactly one WebSite node`);
 
@@ -418,6 +542,19 @@ console.log('\n# seo');
       const works = graph.filter((node) => String(node['@id']).includes('#publication-'));
       if (works.length < 10) fail(`about: only ${works.length} publications in the graph`);
       else ok(`about: ${works.length} publications, authored by the site's Person`);
+
+      const dois = works.filter((node) => node.sameAs?.includes?.('doi.org'));
+      if (dois.length === 0) fail('about: no publication resolves through a DOI');
+      else ok(`about: ${dois.length} publications carry a DOI`);
+
+      // The external records belong on the page, not only in the markup: it is
+      // the same answer to a reader asking "says who?" and to an answer engine
+      // asking what to cite instead of this site.
+      for (const host of ['dialnet.unirioja.es', 'todostuslibros.com', 'openlibrary.org', 'webofscience.com']) {
+        if (!html.includes(host)) fail(`about: the page does not link ${host}`);
+      }
+      if (!/class="elsewhere"/.test(html)) fail('about: no records-held-elsewhere section');
+      else ok('about: the external records are visible to a reader');
     }
 
     if (label === 'contact') {

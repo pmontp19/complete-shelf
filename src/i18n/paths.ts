@@ -1,4 +1,5 @@
 import { ROUTES, type Locale, type Section } from './config';
+import type { PageRef } from './page-ref';
 
 /**
  * Every internal href in the project goes through these helpers, so the locale
@@ -41,6 +42,25 @@ export function bookPath(locale: Locale, slug: string): string {
 /** Path to a file in `public/`, e.g. `/covers/foo.webp`. */
 export function assetPath(relative: string): string {
   return `${BASE}/${relative.replace(/^\/+/, '')}`.replace(/([^:])\/{2,}/g, '$1/');
+}
+
+/**
+ * The plain-Markdown mirror of a page, e.g. `/ca/traduccions/anhel.md`.
+ *
+ * Built by hand rather than through `join()`, which appends a trailing slash.
+ * These are files: a trailing slash would make Astro emit `anhel.md/index.html`,
+ * an HTML page under a name that promises Markdown, which is worse than not
+ * offering one at all.
+ */
+export function markdownPath(locale: Locale, page: PageRef): string {
+  switch (page.kind) {
+    case 'home':
+      return `${BASE}/${locale}/index.md`;
+    case 'section':
+      return `${BASE}/${locale}/${ROUTES[locale][page.section]}.md`;
+    case 'book':
+      return `${BASE}/${locale}/${ROUTES[locale].works}/${page.slug}.md`;
+  }
 }
 
 /**

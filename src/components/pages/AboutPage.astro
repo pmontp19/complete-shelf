@@ -1,6 +1,6 @@
 ---
 import { type Locale } from '~/i18n/config';
-import { useTranslations } from '~/i18n/ui';
+import { useTranslations, interpolate } from '~/i18n/ui';
 import { PROFILE, bioFor } from '~/data/profile';
 import { ALL_BOOKS } from '~/data/books';
 import { assetPath } from '~/i18n/paths';
@@ -53,6 +53,31 @@ const span = years.length > 0 ? `${Math.min(...years)}–${Math.max(...years)}` 
               </li>
             ))}
           </ol>
+        </section>
+      )
+    }
+
+    {/* The records other institutions keep. On the page, not just in the JSON-LD,
+        because it is one answer to two questions: a reader asking "says who?" and
+        an answer engine asking what it should cite instead of this site. */}
+    {
+      PROFILE.authorities.length > 0 && (
+        <section class="elsewhere">
+          <h2>{t.about.elsewhere}</h2>
+          <p class="elsewhere__lead">{t.about.elsewhereLead}</p>
+          <ul>
+            {PROFILE.authorities.map((record) => (
+              <li>
+                <a href={record.href} rel="noopener" target="_blank">
+                  {record.label}
+                </a>
+                <span class="elsewhere__covers">{record.covers}</span>
+              </li>
+            ))}
+          </ul>
+          <p class="elsewhere__checked">
+            {interpolate(t.about.elsewhereChecked, { date: PROFILE.verifiedOn })}
+          </p>
         </section>
       )
     }
@@ -221,6 +246,66 @@ const span = years.length > 0 ? `${Math.min(...years)}–${Math.max(...years)}` 
       grid-template-columns: 1fr;
       gap: 0.2rem;
     }
+  }
+
+  /* --- records held elsewhere --------------------------------------------- */
+
+  .elsewhere {
+    margin-top: clamp(2.5rem, 6vw, 4rem);
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--rule);
+  }
+
+  .elsewhere h2 {
+    font-family: var(--font-sans);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 0.75rem;
+  }
+
+  .elsewhere__lead {
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    margin-bottom: 1.35rem;
+  }
+
+  .elsewhere ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 1rem;
+  }
+
+  .elsewhere li {
+    display: grid;
+    gap: 0.15rem;
+    padding-inline-start: 1rem;
+    border-inline-start: 2px solid var(--rule);
+  }
+
+  .elsewhere li a {
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  .elsewhere__covers {
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    color: var(--ink-faint);
+    line-height: 1.5;
+  }
+
+  .elsewhere__checked {
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    color: var(--ink-faint);
+    margin-top: 1.35rem;
   }
 
   .fact {

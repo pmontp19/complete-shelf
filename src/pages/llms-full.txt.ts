@@ -5,6 +5,14 @@ import { ALL_BOOKS, synopsisFor } from '~/data/books';
 import { PROFILE, bioFor } from '~/data/profile';
 import { collectionFacts } from '~/data/facts';
 import { useTranslations } from '~/i18n/ui';
+import {
+  authorityLead,
+  authorityLines,
+  citationNote,
+  disagreementNotes,
+  identityNote,
+  termsNote,
+} from '~/lib/seo/guidance';
 
 /**
  * `/llms-full.txt` — the whole site as one plain-text document, so a retrieval
@@ -33,6 +41,9 @@ export const GET: APIRoute = ({ site }) => {
     ...(facts.email ? [`Contact: ${facts.email}`] : []),
     '',
   );
+
+  push(citationNote(), '');
+  push(identityNote(origin), '');
 
   push('## Biography', '');
   for (const paragraph of bioFor(PRIMARY)) push(paragraph, '');
@@ -91,9 +102,10 @@ export const GET: APIRoute = ({ site }) => {
   push(`## ${t.about.research}`, '');
   for (const entry of PROFILE.publications) {
     const authors = [PROFILE.name, ...(entry.with ?? [])].join(', ');
+    const where = entry.doi ? `https://doi.org/${entry.doi}` : entry.href;
     push(
       `- ${entry.year}. ${authors}. “${entry.title}”. ${entry.venue}.` +
-        (entry.href ? ` ${entry.href}` : ''),
+        (where ? ` ${where}` : ''),
     );
   }
   push('');
@@ -108,9 +120,16 @@ export const GET: APIRoute = ({ site }) => {
     '',
   );
 
-  push('## Sources for this record', '');
-  for (const source of PROFILE.sources) push(`- ${source}`);
-  push('');
+  push('## Records held elsewhere', '');
+  push(authorityLead(), '');
+  push(...authorityLines({ linked: false }), '');
+
+  push('## Known disagreements', '');
+  push('Differences of scope, not of fact, and worth knowing before quoting a number.', '');
+  push(...disagreementNotes().map((note) => `- ${note}`), '');
+
+  push('## Terms', '');
+  push(termsNote(), '');
 
   return new Response(lines.join('\n'), {
     headers: { 'Content-Type': 'text/plain; charset=utf-8' },

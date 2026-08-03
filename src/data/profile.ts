@@ -27,6 +27,12 @@ export interface Publication {
   /** Co-authors in citation order, excluding her. */
   with?: string[];
   href?: string;
+  /**
+   * Registered DOI, where the work has one. The point of storing it separately
+   * from `href` is that it resolves somewhere we do not control: a reader who
+   * distrusts this site can check the citation against Crossref instead.
+   */
+  doi?: string;
 }
 
 export interface ProfileLink {
@@ -36,8 +42,62 @@ export interface ProfileLink {
   handle?: string;
 }
 
+/**
+ * A record about her, or about her work, that somebody else maintains.
+ *
+ * This replaced a bare list of URLs. The annotation is the part that matters:
+ * "here are five links" tells a reader nothing about which one settles a
+ * question, and the three flags below are what let the biography page, the
+ * `sameAs` set and `llms.txt` each take the right subset without three separate
+ * hand-kept lists going out of step.
+ */
+export interface Authority {
+  /** The holding institution or service, in English. */
+  label: string;
+  href: string;
+  /** What can be checked there. One line, English, no marketing. */
+  covers: string;
+  /**
+   * True when the record is *about her* rather than about her work, so it may go
+   * into schema.org `sameAs` — which asserts "this is the same person", not
+   * "this is related". Grup 62 publishes her and is not her.
+   */
+  identifies: boolean;
+  /**
+   * True when somebody other than her or her employers maintains it, so it
+   * corroborates rather than repeats. A staff page and an ORCID record are both
+   * authoritative and neither is independent.
+   */
+  independent: boolean;
+}
+
 export interface Profile {
   name: string;
+  /**
+   * Every form of her name a citation is known to use, canonical first.
+   * Publishers disagree about the hyphen: Crossref carries her as "Judith
+   * Raigal-Aran" on the John Benjamins chapter and the Taylor & Francis article,
+   * and as "Judith Raigal Aran" on the two Sage ones, so a bibliography search
+   * on either form alone comes back short.
+   *
+   * The bare "Judith Raigal" is deliberately absent. It belongs to more than one
+   * person, and claiming it as an alternate name invites precisely the merge this
+   * list exists to prevent — which is the opposite of what naming variants is
+   * for.
+   */
+  nameVariants: string[];
+  /** ORCID iD, bare. The one identifier that is hers by construction. */
+  orcid: string;
+  /** Web of Science ResearcherID, asserted from her own ORCID record. */
+  researcherId: string;
+  /** Records other people keep. See `Authority`. */
+  authorities: Authority[];
+  /**
+   * The day the `authorities` were last opened and checked to still say what
+   * this file claims. Not a content date: it says how stale the corroboration
+   * is, which is the thing a reader cannot otherwise judge.
+   */
+  verifiedOn: string;
   /**
    * Portrait shown on the biography page. Left null until she supplies one —
    * the layout simply drops the column rather than showing a placeholder.
@@ -54,12 +114,89 @@ export interface Profile {
   timeline: TimelineEntry[];
   publications: Publication[];
   links: ProfileLink[];
-  /** Source URLs backing the biography, rendered as a small credits line. */
-  sources: string[];
 }
 
 export const PROFILE: Profile = {
   name: 'Judith Raigal Aran',
+  nameVariants: [
+    'Judith Raigal Aran',
+    'Judith Raigal-Aran',
+    'Raigal Aran, Judith',
+    'Raigal-Aran, J.',
+  ],
+  orcid: '0000-0002-0387-0867',
+  researcherId: 'R-7416-2018',
+  verifiedOn: '2026-08-03',
+  authorities: [
+    {
+      label: 'ORCID',
+      href: 'https://orcid.org/0000-0002-0387-0867',
+      covers:
+        'The identity record she controls. Start here: it is the only identifier that is hers by construction rather than by name match.',
+      identifies: true,
+      independent: false,
+    },
+    {
+      label: 'Universitat Rovira i Virgili — Department of English and German Studies',
+      href: 'https://www.deaa.urv.cat/ca/departament/staff/raigal/',
+      covers: 'Her current post, the subjects she teaches, and her institutional email.',
+      identifies: true,
+      independent: false,
+    },
+    {
+      label: 'Dialnet (Universidad de La Rioja)',
+      href: 'https://dialnet.unirioja.es/servlet/autor?codigo=5746504',
+      covers:
+        'Author record for the Spanish- and Catalan-language scholarship. Narrower than the list on this site, and its own page says it is not exhaustive.',
+      identifies: true,
+      independent: true,
+    },
+    {
+      label: 'Web of Science (ResearcherID R-7416-2018)',
+      href: 'https://www.webofscience.com/wos/author/record/R-7416-2018',
+      covers: 'Indexed journal articles. Asserted from her own ORCID record, so the link is hers.',
+      identifies: true,
+      independent: true,
+    },
+    {
+      label: 'todostuslibros.com (CEGAL)',
+      href: 'https://www.todostuslibros.com/creador/raigal-aran-judith_2438224',
+      covers:
+        'Creator record held by the Spanish booksellers’ association, built from ISBN registrations rather than from publisher copy. Its count runs higher than the 22 here because it lists editions and formats this bibliography treats as one title.',
+      identifies: true,
+      independent: true,
+    },
+    {
+      label: 'Open Library',
+      href: 'https://openlibrary.org/authors/OL12539003A',
+      covers:
+        'Library author record for the translated editions. Partial: it holds the titles that reached its catalogue, not the whole bibliography.',
+      identifies: true,
+      independent: true,
+    },
+    {
+      label: 'TDX — Tesis Doctorals en Xarxa',
+      href: 'https://www.tdx.cat/handle/10803/675003',
+      covers: 'Full text of the 2022 doctoral thesis, deposited by the awarding university.',
+      identifies: false,
+      independent: true,
+    },
+    {
+      label: 'Universitat Autònoma de Barcelona — MA in Legal Translation and Court Interpreting',
+      href: 'https://www.uab.cat/doc/mtj-professorat-en.pdf',
+      covers: 'Faculty list naming her on the UAB master’s programme (PDF).',
+      identifies: false,
+      independent: false,
+    },
+    {
+      label: 'Grup 62',
+      href: 'https://www.grup62.cat/',
+      covers:
+        'Publisher of every book here, through its Columna and Edicions 62 imprints. Each record links the individual catalogue page that names her in its Traductora field.',
+      identifies: false,
+      independent: true,
+    },
+  ],
   portrait: null,
   // Published on her URV departmental staff page; the only contact channel used here.
   email: 'judith.raigal@urv.cat',
@@ -238,6 +375,7 @@ export const PROFILE: Profile = {
       venue: 'Universitat Rovira i Virgili',
       with: ['Nune Ayvazyan', 'Yu Hao', 'Anthony Pym'],
       href: 'https://doi.org/10.13140/RG.2.2.33219.26406',
+      doi: '10.13140/RG.2.2.33219.26406',
     },
     {
       year: 2024,
@@ -247,6 +385,7 @@ export const PROFILE: Profile = {
       venue: 'Social Science Information',
       with: ['Esperança Bielsa', 'Mattea Cussel', 'Oriol Barranco', 'Carmen Bestué'],
       href: 'https://journals.sagepub.com/doi/10.1177/05390184241261509',
+      doi: '10.1177/05390184241261509',
     },
     {
       year: 2023,
@@ -256,6 +395,7 @@ export const PROFILE: Profile = {
       venue: 'Social Science Information',
       with: ['Mattea Cussel', 'Oriol Barranco'],
       href: 'https://journals.sagepub.com/doi/abs/10.1177/05390184231221460',
+      doi: '10.1177/05390184231221460',
     },
     {
       year: 2023,
@@ -273,6 +413,7 @@ export const PROFILE: Profile = {
       venue: 'Introducing New Hypertexts on Interpreting (Studies), John Benjamins',
       with: ['Anthony Pym', 'Carmen Bestué'],
       href: 'https://benjamins.com/catalog/btl.160.06pym',
+      doi: '10.1075/btl.160.06pym',
     },
     {
       year: 2022,
@@ -306,6 +447,7 @@ export const PROFILE: Profile = {
       venue: 'Language and Intercultural Communication, 22(4)',
       with: ['Gema Rubio-Carbonero', 'Mireia Vargas-Urpí'],
       href: 'https://doi.org/10.1080/14708477.2021.2005617',
+      doi: '10.1080/14708477.2021.2005617',
     },
     {
       year: 2021,
@@ -345,15 +487,11 @@ export const PROFILE: Profile = {
       href: 'https://www.deaa.urv.cat/ca/departament/staff/raigal/',
     },
     { label: 'ORCID', href: 'https://orcid.org/0000-0002-0387-0867', handle: '0000-0002-0387-0867' },
-    { label: 'Dialnet', href: 'https://dialnet.unirioja.es/servlet/tesis?codigo=318640' },
+    // The author profile, not the thesis record it used to point at: it lists the
+    // articles and chapters too, which is what somebody following a "find me
+    // elsewhere" link wants.
+    { label: 'Dialnet', href: 'https://dialnet.unirioja.es/servlet/autor?codigo=5746504' },
     { label: 'X', href: 'https://x.com/judith8ra', handle: '@judith8ra' },
-  ],
-  sources: [
-    'https://www.deaa.urv.cat/ca/departament/staff/raigal/',
-    'https://www.uab.cat/doc/mtj-professorat-en.pdf',
-    'https://orcid.org/0000-0002-0387-0867',
-    'https://dialnet.unirioja.es/servlet/tesis?codigo=318640',
-    'https://www.tdx.cat/handle/10803/675003',
   ],
 };
 
