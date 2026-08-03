@@ -30,5 +30,32 @@
       "permanent": false
     },
     { "source": "/", "destination": "/ca/", "permanent": false }
+  ],
+  "headers": [
+    {
+      "source": "/_astro/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    },
+    {
+      "source": "/covers/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=604800, stale-while-revalidate=2592000" }
+      ]
+    },
+    {
+      "source": "/(favicon.svg|og-default.png)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800" }]
+    },
+    {
+      "source": "/(llms.txt|llms-full.txt|robots.txt|sitemap.xml)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600" }]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    }
   ]
 }

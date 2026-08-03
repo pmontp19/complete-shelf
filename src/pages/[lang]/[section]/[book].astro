@@ -13,6 +13,7 @@ import {
   synopsisFor,
   type BookRecord,
 } from '~/data/books';
+import { bookNode } from '~/lib/seo/schema';
 
 export function getStaticPaths() {
   return LOCALES.flatMap((lang) =>
@@ -41,6 +42,7 @@ const description = interpolate(t.book.metaDescription, {
   author: book.author,
   publisher: book.publisher,
 });
+const coverAlt = interpolate(t.book.coverAlt, { title: book.title, author: book.author });
 
 const rows: Array<{ label: string; value: string }> = [
   { label: t.book.originalTitle, value: book.originalTitle },
@@ -57,20 +59,7 @@ const rows: Array<{ label: string; value: string }> = [
     : []),
 ];
 
-const schema = {
-  '@context': 'https://schema.org',
-  '@type': 'Book',
-  name: book.title,
-  alternateName: book.originalTitle,
-  author: { '@type': 'Person', name: book.author },
-  translator: { '@type': 'Person', name: 'Judith Raigal Aran' },
-  publisher: { '@type': 'Organization', name: book.publisher },
-  datePublished: String(book.year),
-  isbn: book.isbn,
-  inLanguage: book.targetLanguage,
-  numberOfPages: book.pageCount,
-  abstract: synopsis || undefined,
-};
+const bookSchema = bookNode(book, locale, Astro.site ?? new URL(Astro.url.origin));
 ---
 
 <BaseLayout
@@ -79,11 +68,18 @@ const schema = {
   description={description}
   page={{ kind: 'book', slug: book.id }}
   current="works"
-  ogImage={coverFor(book.id)}
+  ogType="book"
+  ogImage={{ src: coverFor(book.id), width: cover.width, height: cover.height, alt: coverAlt }}
+  mainEntity={bookSchema}
+  about={{ '@id': bookSchema['@id'] as string }}
   tint={{ color: palette.spineColor, contrast: palette.textColor }}
 >
-  <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(schema)}
-  ></script>
+  <Fragment slot="head">
+    {/* This page's LCP. */}
+    <link rel="preload" as="image" href={coverFor(book.id)} fetchpriority="high" />
+    <meta property="book:isbn" content={book.isbn} />
+    <meta property="book:release_date" content={String(book.year)} />
+  </Fragment>
 
   <nav class="crumb">
     <a class="link-arrow crumb__link" href={sectionPath(locale, 'works')}>
@@ -105,7 +101,7 @@ const schema = {
         src={coverFor(book.id)}
         width={cover.width}
         height={cover.height}
-        alt={`${t.book.originalTitle}: ${book.originalTitle}. ${book.title}, ${book.author}`}
+        alt={coverAlt}
         fetchpriority="high"
         style={`view-transition-name:cover-${book.id}`}
       />

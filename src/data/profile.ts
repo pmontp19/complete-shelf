@@ -22,6 +22,8 @@ export interface Publication {
   title: string;
   /** Journal, publisher or awarding institution. */
   venue: string;
+  /** Invisible on the page; it is what the structured data turns into a type. */
+  kind: 'article' | 'chapter' | 'report' | 'thesis';
   /** Co-authors in citation order, excluding her. */
   with?: string[];
   href?: string;
@@ -222,6 +224,7 @@ export const PROFILE: Profile = {
   publications: [
     {
       year: 2026,
+      kind: 'article',
       title:
         '¿Cómo enseñar desde la incertidumbre? Resultados de aprendizaje de traducción en la era de la automatización',
       venue: 'redit — Revista Electrónica de Didáctica de la Traducción y la Interpretación, 20',
@@ -230,6 +233,7 @@ export const PROFILE: Profile = {
     },
     {
       year: 2026,
+      kind: 'report',
       title: 'Generative AI in the Translation Revision Class. Technical Report on the Spanish Activity',
       venue: 'Universitat Rovira i Virgili',
       with: ['Nune Ayvazyan', 'Yu Hao', 'Anthony Pym'],
@@ -237,6 +241,7 @@ export const PROFILE: Profile = {
     },
     {
       year: 2024,
+      kind: 'article',
       title:
         'Recommendations on the translation of academic texts in the social sciences and the humanities',
       venue: 'Social Science Information',
@@ -245,6 +250,7 @@ export const PROFILE: Profile = {
     },
     {
       year: 2023,
+      kind: 'article',
       title:
         'Academics in the semi-periphery: Translation and linguistic strategies on the rocky road to publishing in English',
       venue: 'Social Science Information',
@@ -253,6 +259,7 @@ export const PROFILE: Profile = {
     },
     {
       year: 2023,
+      kind: 'article',
       title:
         'Applying a sociological perspective to the analysis of court interpreting interactions: Exploring trust and distrust',
       venue: "The Interpreters' Newsletter, 28 — EUT Edizioni Università di Trieste",
@@ -261,6 +268,7 @@ export const PROFILE: Profile = {
     },
     {
       year: 2023,
+      kind: 'chapter',
       title: 'Non-standard court interpreting as risk management',
       venue: 'Introducing New Hypertexts on Interpreting (Studies), John Benjamins',
       with: ['Anthony Pym', 'Carmen Bestué'],
@@ -268,12 +276,14 @@ export const PROFILE: Profile = {
     },
     {
       year: 2022,
+      kind: 'thesis',
       title: 'Quan els jutges (no) confien en els intèrprets: anàlisi d’un corpus de procediments penals',
       venue: 'Tesi doctoral, Universitat Rovira i Virgili',
       href: 'https://www.tdx.cat/handle/10803/675003',
     },
     {
       year: 2022,
+      kind: 'chapter',
       title: 'Careers in languages',
       venue:
         'Inclusion, Diversity and Communication Across Cultures. A Teacher’s Book with Classroom Activities for Secondary Education, Universitat Autònoma de Barcelona',
@@ -282,6 +292,7 @@ export const PROFILE: Profile = {
     },
     {
       year: 2021,
+      kind: 'article',
       title:
         'La recepció crítica de l’estrena de «La visita de la vella dama» [Der Besuch der alten Dame], de Friedrich Dürrenmatt a Barcelona (1962)',
       venue: 'Anuari TRILCAT, 10 (2020–2021)',
@@ -289,6 +300,7 @@ export const PROFILE: Profile = {
     },
     {
       year: 2021,
+      kind: 'article',
       title:
         'Child language brokering and multilingualism in Catalonia: language use and attitudes in a bilingual region',
       venue: 'Language and Intercultural Communication, 22(4)',
@@ -297,6 +309,7 @@ export const PROFILE: Profile = {
     },
     {
       year: 2021,
+      kind: 'article',
       title:
         'Disseny d’una simulació judicial multilingüe per futurs traductors, intèrprets i operadors jurídics: col·laboració interdepartamental',
       venue: 'Revista del CIDUI, 5',
@@ -311,6 +324,7 @@ export const PROFILE: Profile = {
     },
     {
       year: 2019,
+      kind: 'report',
       title: 'Normas recomendadas para trabajar con intérpretes judiciales',
       venue: 'Grup de Recerca Intercultural, URV',
       with: ['Anthony Pym'],
@@ -318,6 +332,7 @@ export const PROFILE: Profile = {
     },
     {
       year: 2018,
+      kind: 'chapter',
       title:
         'Les expectatives del client: el contracte de serveis d’interpretació i traducció dels òrgans judicials de Catalunya',
       venue: 'Recerca en Humanitats 2018',

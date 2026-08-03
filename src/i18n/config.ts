@@ -17,13 +17,26 @@ export const LOCALE_NAMES: Record<Locale, string> = {
   fr: 'Français',
 };
 
-/** BCP-47 tags for `lang` attributes, `hreflang` and `Intl` formatting. */
+/** BCP-47 tags for `lang` attributes and `Intl` formatting. */
 export const LOCALE_TAGS: Record<Locale, string> = {
   ca: 'ca-ES',
   es: 'es-ES',
   en: 'en-GB',
   de: 'de-DE',
   fr: 'fr-FR',
+};
+
+/**
+ * `hreflang` only. Not `LOCALE_TAGS`: `hreflang="en-GB"` would claim the English
+ * version is *for the United Kingdom*, leaving every other English speaker to
+ * fall through to `x-default`, which here is Catalan.
+ */
+export const HREFLANGS: Record<Locale, string> = {
+  ca: 'ca',
+  es: 'es',
+  en: 'en',
+  de: 'de',
+  fr: 'fr',
 };
 
 /** Localised URL segments. Kept ASCII-safe so the paths never need escaping. */

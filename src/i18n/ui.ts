@@ -1,5 +1,10 @@
 import type { Locale } from './config';
 
+/** Fixed keys, not an array, so every locale is required to answer all of them. */
+export const FAQ_KEYS = ['languages', 'volume', 'genres', 'legal', 'where', 'commission'] as const;
+
+export type FaqKey = (typeof FAQ_KEYS)[number];
+
 /**
  * One dictionary shape for every locale. Keeping it as a typed literal means a
  * missing or misspelled key is a build error rather than an empty string in
@@ -45,6 +50,7 @@ export interface Dictionary {
   };
   book: {
     originalTitle: string;
+    coverAlt: string;
     author: string;
     publisher: string;
     year: string;
@@ -87,6 +93,8 @@ export interface Dictionary {
     languages: string;
     metaDescription: string;
   };
+  /** Answers carry `{token}`s filled from the bibliography. */
+  faq: { title: string; entries: Record<FaqKey, { question: string; answer: string }> };
   footer: { rights: string; coverNotice: string; colophon: string };
 }
 
@@ -144,6 +152,7 @@ const ca: Dictionary = {
   },
   book: {
     originalTitle: 'Títol original',
+    coverAlt: 'Coberta de {title}, de {author}',
     author: 'Autoria',
     publisher: 'Editorial',
     year: 'Any',
@@ -193,6 +202,41 @@ const ca: Dictionary = {
     languages: 'Llengües de treball',
     elsewhere: 'També em trobaràs a',
     metaDescription: 'Contacte professional de la traductora literària Judith Raigal Aran.',
+  },
+  faq: {
+    title: 'Preguntes freqüents',
+    entries: {
+      languages: {
+        question: 'En quines llengües treballes?',
+        answer:
+          'Les meves llengües de treball són: {workingLanguages}. Dels {count} volums publicats, tots han sortit en {targetLanguages}; les llengües de partida són {sourceLanguages}.',
+      },
+      volume: {
+        question: 'Quantes traduccions has publicat?',
+        answer:
+          '{count} llibres, publicats entre el {firstYear} i el {lastYear} per a {publishers}. El catàleg complet, amb l’editorial, l’any i l’ISBN de cada volum, és a la pàgina de traduccions.',
+      },
+      genres: {
+        question: 'Quins gèneres tradueixes?',
+        answer:
+          'Al catàleg hi ha {genres}. Cada fitxa indica el gènere del volum, la llengua original i qui n’és l’autoria.',
+      },
+      legal: {
+        question: 'Fas traducció jurídica?',
+        answer:
+          'Sí. Compagino la traducció literària amb la traducció jurídica i econòmica, i imparteixo traducció jurídica i interpretació judicial a la Universitat Rovira i Virgili, la Universitat Pompeu Fabra i la Universitat Autònoma de Barcelona.',
+      },
+      where: {
+        question: 'On treballes?',
+        answer:
+          'Entre {location}. Tradueixo per a editorials del Grup 62 i faig classe a la URV, la UPF i la UAB.',
+      },
+      commission: {
+        question: 'Com et puc encarregar una traducció?',
+        answer:
+          'Escriu-me a {email}. Els encàrrecs editorials, les propostes de docència i les consultes sobre qualsevol dels títols del catàleg van al mateix correu.',
+      },
+    },
   },
   footer: {
     rights: 'Tots els drets reservats.',
@@ -256,6 +300,7 @@ const es: Dictionary = {
   },
   book: {
     originalTitle: 'Título original',
+    coverAlt: 'Cubierta de {title}, de {author}',
     author: 'Autoría',
     publisher: 'Editorial',
     year: 'Año',
@@ -305,6 +350,41 @@ const es: Dictionary = {
     languages: 'Lenguas de trabajo',
     elsewhere: 'También me encontrarás en',
     metaDescription: 'Contacto profesional de la traductora literaria Judith Raigal Aran.',
+  },
+  faq: {
+    title: 'Preguntas frecuentes',
+    entries: {
+      languages: {
+        question: '¿En qué lenguas trabajas?',
+        answer:
+          'Mis lenguas de trabajo son: {workingLanguages}. De los {count} volúmenes publicados, todos han salido en {targetLanguages}; las lenguas de partida son {sourceLanguages}.',
+      },
+      volume: {
+        question: '¿Cuántas traducciones has publicado?',
+        answer:
+          '{count} libros, publicados entre {firstYear} y {lastYear} para {publishers}. El catálogo completo, con la editorial, el año y el ISBN de cada volumen, está en la página de traducciones.',
+      },
+      genres: {
+        question: '¿Qué géneros traduces?',
+        answer:
+          'En el catálogo hay {genres}. Cada ficha indica el género del volumen, la lengua original y su autoría.',
+      },
+      legal: {
+        question: '¿Haces traducción jurídica?',
+        answer:
+          'Sí. Compagino la traducción literaria con la traducción jurídica y económica, e imparto traducción jurídica e interpretación judicial en la Universitat Rovira i Virgili, la Universitat Pompeu Fabra y la Universitat Autònoma de Barcelona.',
+      },
+      where: {
+        question: '¿Dónde trabajas?',
+        answer:
+          'Entre {location}. Traduzco para editoriales del Grup 62 y doy clase en la URV, la UPF y la UAB.',
+      },
+      commission: {
+        question: '¿Cómo puedo encargarte una traducción?',
+        answer:
+          'Escríbeme a {email}. Los encargos editoriales, las propuestas de docencia y las consultas sobre cualquiera de los títulos del catálogo van al mismo correo.',
+      },
+    },
   },
   footer: {
     rights: 'Todos los derechos reservados.',
@@ -368,6 +448,7 @@ const en: Dictionary = {
   },
   book: {
     originalTitle: 'Original title',
+    coverAlt: 'Cover of {title} by {author}',
     author: 'Author',
     publisher: 'Publisher',
     year: 'Year',
@@ -417,6 +498,41 @@ const en: Dictionary = {
     languages: 'Working languages',
     elsewhere: 'You can also find me on',
     metaDescription: 'Professional contact details for literary translator Judith Raigal Aran.',
+  },
+  faq: {
+    title: 'Frequently asked questions',
+    entries: {
+      languages: {
+        question: 'Which languages do you work in?',
+        answer:
+          'My working languages are: {workingLanguages}. All {count} published volumes have appeared in {targetLanguages}; the source languages are {sourceLanguages}.',
+      },
+      volume: {
+        question: 'How many translations have you published?',
+        answer:
+          '{count} books, published between {firstYear} and {lastYear} for {publishers}. The full catalogue, with the publisher, year and ISBN of every volume, is on the translations page.',
+      },
+      genres: {
+        question: 'Which genres do you translate?',
+        answer:
+          'The catalogue holds {genres}. Every record names the genre, the source language and the author of the volume.',
+      },
+      legal: {
+        question: 'Do you take legal translation work?',
+        answer:
+          'Yes. Literary translation runs alongside legal and economic translation, and I teach legal translation and court interpreting at Universitat Rovira i Virgili, Universitat Pompeu Fabra and Universitat Autònoma de Barcelona.',
+      },
+      where: {
+        question: 'Where do you work?',
+        answer:
+          'Between {location}. I translate for the Grup 62 imprints and teach at URV, UPF and UAB.',
+      },
+      commission: {
+        question: 'How can I commission a translation?',
+        answer:
+          'Write to {email}. Publishing commissions, teaching enquiries and questions about any title in the catalogue all reach the same address.',
+      },
+    },
   },
   footer: {
     rights: 'All rights reserved.',
@@ -480,6 +596,7 @@ const de: Dictionary = {
   },
   book: {
     originalTitle: 'Originaltitel',
+    coverAlt: 'Buchumschlag von {title} von {author}',
     author: 'Autorin oder Autor',
     publisher: 'Verlag',
     year: 'Jahr',
@@ -530,6 +647,41 @@ const de: Dictionary = {
     languages: 'Arbeitssprachen',
     elsewhere: 'Sie finden mich auch auf',
     metaDescription: 'Beruflicher Kontakt der Literaturübersetzerin Judith Raigal Aran.',
+  },
+  faq: {
+    title: 'Häufige Fragen',
+    entries: {
+      languages: {
+        question: 'Mit welchen Sprachen arbeiten Sie?',
+        answer:
+          'Meine Arbeitssprachen sind: {workingLanguages}. Alle {count} veröffentlichten Bände sind auf {targetLanguages} erschienen; die Ausgangssprachen sind {sourceLanguages}.',
+      },
+      volume: {
+        question: 'Wie viele Übersetzungen haben Sie veröffentlicht?',
+        answer:
+          '{count} Bücher, erschienen zwischen {firstYear} und {lastYear} bei {publishers}. Der vollständige Katalog mit Verlag, Jahr und ISBN jedes Bandes steht auf der Seite mit den Übersetzungen.',
+      },
+      genres: {
+        question: 'Welche Genres übersetzen Sie?',
+        answer:
+          'Der Katalog umfasst {genres}. Jeder Eintrag nennt Genre, Ausgangssprache und Autorschaft des Bandes.',
+      },
+      legal: {
+        question: 'Übernehmen Sie juristische Übersetzungen?',
+        answer:
+          'Ja. Neben der Literaturübersetzung arbeite ich als juristische und Wirtschaftsübersetzerin und unterrichte juristisches Übersetzen und Gerichtsdolmetschen an der Universitat Rovira i Virgili, der Universitat Pompeu Fabra und der Universitat Autònoma de Barcelona.',
+      },
+      where: {
+        question: 'Wo arbeiten Sie?',
+        answer:
+          'Zwischen {location}. Ich übersetze für die Verlage der Grup 62 und lehre an der URV, der UPF und der UAB.',
+      },
+      commission: {
+        question: 'Wie kann ich eine Übersetzung in Auftrag geben?',
+        answer:
+          'Schreiben Sie an {email}. Verlagsaufträge, Anfragen zur Lehre und Fragen zu einem Titel des Katalogs erreichen mich alle unter derselben Adresse.',
+      },
+    },
   },
   footer: {
     rights: 'Alle Rechte vorbehalten.',
@@ -593,6 +745,7 @@ const fr: Dictionary = {
   },
   book: {
     originalTitle: 'Titre original',
+    coverAlt: 'Couverture de {title}, de {author}',
     author: 'Auteur ou autrice',
     publisher: 'Éditeur',
     year: 'Année',
@@ -643,6 +796,41 @@ const fr: Dictionary = {
     languages: 'Langues de travail',
     elsewhere: 'Vous pouvez aussi me retrouver sur',
     metaDescription: 'Contact professionnel de la traductrice littéraire Judith Raigal Aran.',
+  },
+  faq: {
+    title: 'Questions fréquentes',
+    entries: {
+      languages: {
+        question: 'Dans quelles langues travaillez-vous ?',
+        answer:
+          'Mes langues de travail sont : {workingLanguages}. Les {count} volumes publiés ont tous paru en {targetLanguages} ; les langues de départ sont {sourceLanguages}.',
+      },
+      volume: {
+        question: 'Combien de traductions avez-vous publiées ?',
+        answer:
+          '{count} livres, publiés entre {firstYear} et {lastYear} chez {publishers}. Le catalogue complet, avec l’éditeur, l’année et l’ISBN de chaque volume, se trouve sur la page des traductions.',
+      },
+      genres: {
+        question: 'Quels genres traduisez-vous ?',
+        answer:
+          'Le catalogue réunit {genres}. Chaque fiche indique le genre du volume, la langue source et son autrice ou son auteur.',
+      },
+      legal: {
+        question: 'Acceptez-vous des traductions juridiques ?',
+        answer:
+          'Oui. La traduction littéraire va de pair avec la traduction juridique et économique, et j’enseigne la traduction juridique et l’interprétation judiciaire à l’Universitat Rovira i Virgili, à l’Universitat Pompeu Fabra et à l’Universitat Autònoma de Barcelona.',
+      },
+      where: {
+        question: 'Où travaillez-vous ?',
+        answer:
+          'Entre {location}. Je traduis pour les maisons du Grup 62 et j’enseigne à l’URV, à l’UPF et à l’UAB.',
+      },
+      commission: {
+        question: 'Comment vous confier une traduction ?',
+        answer:
+          'Écrivez-moi à {email}. Les commandes éditoriales, les propositions d’enseignement et les questions sur l’un des titres du catalogue arrivent à la même adresse.',
+      },
+    },
   },
   footer: {
     rights: 'Tous droits réservés.',
