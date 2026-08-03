@@ -58,11 +58,16 @@ export const GET: APIRoute = ({ site }) => {
             title: book.title,
             author: book.author,
           });
+          const license = new URL(`${homePath(locale)}#cover-rights`, origin).href;
           image =
             '\n    <image:image>' +
             `\n      <image:loc>${escape(new URL(coverFor(book.id), origin).href)}</image:loc>` +
             `\n      <image:title>${escape(book.title)}</image:title>` +
             `\n      <image:caption>${escape(caption)}</image:caption>` +
+            // The covers are publisher art, reproduced only for bibliographic
+            // identification — not a work of this site's own. `image:license`
+            // points at the footer note that says so, on every page.
+            `\n      <image:license>${escape(license)}</image:license>` +
             '\n    </image:image>';
         }
       }
