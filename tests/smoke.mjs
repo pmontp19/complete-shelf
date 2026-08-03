@@ -181,9 +181,8 @@ console.log('\n# book detail + i18n');
   if ((await page.locator('h1').count()) !== 1) fail('detail page does not have exactly one h1');
   else ok('single h1');
 
-  // The language switcher must keep the reader on the same book. `hreflang` is a
-  // language-only tag by design — see `HREFLANGS` — so this selector is also the
-  // regression test for it turning back into `de-DE`.
+  // The language switcher must keep the reader on the same book. The selector is
+  // also the regression test for `hreflang` turning back into `de-DE`.
   await page.locator('.langs a[hreflang="de"]').click();
   await page.waitForLoadState('networkidle');
   if (!page.url().includes('/de/uebersetzungen/la-casa-alemanya/')) {
@@ -274,10 +273,6 @@ console.log('\n# degradation');
 }
 
 // ----------------------------------------------------------------- seo ----
-// Everything a crawler or an answer engine is handed, checked as data rather
-// than by eye: the head of each kind of page, the machine-readable files, and
-// the one invariant that matters most — that the structured data says the same
-// thing the page does.
 console.log('\n# seo');
 {
   const text = async (path) => {
@@ -286,7 +281,6 @@ console.log('\n# seo');
     return res.ok ? res.text() : '';
   };
 
-  // -- robots.txt ------------------------------------------------------------
   const robots = await text('robots.txt');
   if (!/^Sitemap: https?:\/\/\S+\/sitemap\.xml$/m.test(robots)) fail('robots.txt has no absolute sitemap');
   else ok('robots.txt points at the sitemap');
@@ -297,7 +291,6 @@ console.log('\n# seo');
   else ok('robots.txt admits the answer engines');
   if (!robots.includes('llms.txt')) fail('robots.txt does not mention llms.txt');
 
-  // -- llms.txt / llms-full.txt ---------------------------------------------
   const llms = await text('llms.txt');
   if (!llms.startsWith('# Judith Raigal Aran')) fail('llms.txt does not open with an H1');
   const missingIsbn = books.filter((book) => !llms.includes(book.isbn));
@@ -311,7 +304,6 @@ console.log('\n# seo');
   else ok(`llms-full.txt carries all ${EXPECTED} records`);
   if (!/## Biography/.test(full) || !/## Contact/.test(full)) fail('llms-full.txt is missing a section');
 
-  // -- sitemap ---------------------------------------------------------------
   const sitemap = await text('sitemap.xml');
   const locs = [...sitemap.matchAll(/<loc>/g)].length;
   if (locs !== (EXPECTED + 4) * 5) fail(`sitemap has ${locs} URLs, expected ${(EXPECTED + 4) * 5}`);
@@ -322,7 +314,6 @@ console.log('\n# seo');
   if (/hreflang="[a-z]{2}-[A-Z]{2}"/.test(sitemap)) fail('sitemap uses region-locked hreflang tags');
   if (!/hreflang="x-default"/.test(sitemap)) fail('sitemap has no x-default');
 
-  // -- the head of every kind of page ---------------------------------------
   const PAGES = [
     ['ca/', 'home'],
     ['ca/traduccions/', 'works'],
@@ -365,7 +356,6 @@ console.log('\n# seo');
     const description = one(/<meta name="description" content="([^"]*)"/g, 'description');
     if (!description) fail(`${label}: empty meta description`);
 
-    // Exactly one JSON-LD block per page, and it has to parse.
     const blocks = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
     if (blocks.length !== 1) {
       fail(`${label}: expected one JSON-LD block, found ${blocks.length}`);
@@ -409,7 +399,6 @@ console.log('\n# seo');
       }
       const crumbs = byType('BreadcrumbList')[0]?.itemListElement ?? [];
       if (crumbs.length !== 3) fail(`${label}: breadcrumb has ${crumbs.length} steps, expected 3`);
-      // A portrait cover in a wide card is cropped through the middle.
       if (!/<meta name="twitter:card" content="summary"/.test(html)) {
         fail(`${label}: a portrait cover should use the small card`);
       }
@@ -436,7 +425,7 @@ console.log('\n# seo');
       if (!types.includes('FAQPage')) fail('contact: not marked up as an FAQPage');
       const questions = [].concat(pageNode?.mainEntity ?? []);
       if (questions.length < 5) fail(`contact: only ${questions.length} questions`);
-      // The point of the markup is that it repeats the page, not that it exists.
+      // The point of the markup is that it repeats the page.
       for (const question of questions) {
         const answer = question.acceptedAnswer?.text ?? '';
         if (!html.includes(answer.replace(/&/g, '&#38;'))) {

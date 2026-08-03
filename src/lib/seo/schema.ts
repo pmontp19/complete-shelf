@@ -5,41 +5,19 @@ import { useTranslations } from '~/i18n/ui';
 import { PROFILE, bioFor } from '~/data/profile';
 import { ALL_BOOKS, coverFor, synopsisFor, type BookRecord } from '~/data/books';
 
-/**
- * The site's structured data, as one linked graph per page.
- *
- * Every page emits a single `application/ld+json` block holding a `@graph`: the
- * Person, the WebSite, the page itself and whatever the page is *about*, all
- * cross-referenced by `@id`. That is the part that matters — a loose Person node
- * on one page and a loose Book node on another are two facts; the same two nodes
- * joined by `translator: {"@id": …#person}` are one statement about who
- * translated the book, which is what a search engine or an answer engine can
- * actually carry away and repeat.
- *
- * Nothing here is written by hand: the nodes are built from `books.json` and
- * `profile.ts`, the same records the visible pages render. Structured data that
- * disagrees with the page it sits on is worse than none at all.
- */
-
-/** A JSON-LD node. Loose on purpose — schema.org is wider than any type we'd write. */
+/** The JSON-LD graph every page carries, built from `books.json` and `profile.ts`. */
 export type Node = Record<string, unknown>;
 
 const abs = (origin: URL | string, path: string) => new URL(path, origin).href;
-
-/** The site root as an absolute URL, honouring `base`. */
 const root = (origin: URL | string) => abs(origin, assetPath(''));
 
-/**
- * Stable identifiers. They have to be identical on every page of every locale or
- * the graph splits into one Person per URL, which is precisely the ambiguity
- * structured data exists to remove.
- */
+// Identical on every page of every locale, or the graph splits into one Person
+// per URL.
 export const personId = (origin: URL | string) => `${root(origin)}#person`;
 export const websiteId = (origin: URL | string) => `${root(origin)}#website`;
 
 const ORCID = '0000-0002-0387-0867';
 
-/** Institutions she is actually attached to, named the way they name themselves. */
 const URV: Node = {
   '@type': 'CollegeOrUniversity',
   name: 'Universitat Rovira i Virgili',
@@ -61,11 +39,6 @@ const UAB: Node = {
   url: 'https://www.uab.cat/',
 };
 
-/**
- * Columna and Edicions 62 are imprints of Grup 62 — which is where the
- * bibliography was verified, and the link a reader following the publisher would
- * want. Any other publisher is emitted by name alone rather than guessed at.
- */
 const IMPRINT_PARENTS: Record<string, Node> = {
   Columna: { '@type': 'Organization', name: 'Grup 62', url: 'https://www.grup62.cat/' },
   'Edicions 62': { '@type': 'Organization', name: 'Grup 62', url: 'https://www.grup62.cat/' },
@@ -76,11 +49,6 @@ function publisherNode(name: string): Node {
   return { '@type': 'Organization', name, ...(parent ? { parentOrganization: parent } : {}) };
 }
 
-/**
- * Her. The one node everything else on the site hangs off, so it carries the
- * external identifiers that let an engine decide this Judith Raigal Aran is the
- * one on ORCID and on the URV staff list, rather than a namesake.
- */
 export function personNode(locale: Locale, origin: URL | string): Node {
   const t = useTranslations(locale);
   const [opening] = bioFor(locale);
@@ -97,8 +65,6 @@ export function personNode(locale: Locale, origin: URL | string): Node {
     url: abs(origin, homePath(locale)),
     mainEntityOfPage: { '@id': `${abs(origin, sectionPath(locale, 'about'))}#webpage` },
     ...(PROFILE.email ? { email: `mailto:${PROFILE.email}` } : {}),
-    // `sameAs` is the whole point of this node: the ORCID record, the university
-    // staff page and the thesis repository are what disambiguate her.
     sameAs: PROFILE.links.map((link) => link.href),
     identifier: {
       '@type': 'PropertyValue',
@@ -125,8 +91,6 @@ export function personNode(locale: Locale, origin: URL | string): Node {
     },
     worksFor: [URV, UPF, UAB],
     alumniOf: [UPF, URV],
-    // Where she works, in the terms a local search actually uses. The street
-    // address is not public and is not invented here.
     address: {
       '@type': 'PostalAddress',
       addressLocality: 'Tarragona',
@@ -146,7 +110,6 @@ export function personNode(locale: Locale, origin: URL | string): Node {
   };
 }
 
-/** The site itself: one node, referenced from every page's `isPartOf`. */
 export function websiteNode(locale: Locale, origin: URL | string): Node {
   const t = useTranslations(locale);
   return {
@@ -160,12 +123,9 @@ export function websiteNode(locale: Locale, origin: URL | string): Node {
     author: { '@id': personId(origin) },
     publisher: { '@id': personId(origin) },
     copyrightHolder: { '@id': personId(origin) },
-    // No `SearchAction`: there is no site search to point one at, and claiming
-    // one that does not exist is how a sitelinks searchbox turns into a 404.
   };
 }
 
-/** Which kind of page each route is, in schema.org's vocabulary. */
 export function pageTypeFor(page: PageRef): string {
   switch (page.kind) {
     case 'home':
@@ -186,10 +146,7 @@ export interface BreadcrumbStep {
   url: string;
 }
 
-/**
- * The trail to the current page. Home is never given a breadcrumb: a list with
- * one item is noise, and Google drops it anyway.
- */
+/** Home gets no trail: a breadcrumb of one item is dropped anyway. */
 export function breadcrumbSteps(
   locale: Locale,
   page: PageRef,
@@ -203,7 +160,10 @@ export function breadcrumbSteps(
     case 'home':
       return [];
     case 'section':
-      return [home, { name: t.nav[page.section], url: abs(origin, sectionPath(locale, page.section)) }];
+      return [
+        home,
+        { name: t.nav[page.section], url: abs(origin, sectionPath(locale, page.section)) },
+      ];
     case 'book':
       return [
         home,
@@ -226,12 +186,7 @@ export function breadcrumbNode(canonical: string, steps: BreadcrumbStep[]): Node
   };
 }
 
-/**
- * A translated edition. The shape is the one schema.org actually defines for
- * translations: this node is the Catalan book, and `translationOfWork` points at
- * the work it came from — which is what makes "translated by" a machine-readable
- * relation instead of a line in a table.
- */
+/** A translated edition. `brief` is the form a catalogue entry takes. */
 export function bookNode(
   book: BookRecord,
   locale: Locale,
@@ -247,9 +202,6 @@ export function bookNode(
     ...(book.coTranslators ?? []).map((name) => ({ '@type': 'Person', name })),
   ];
 
-  // Enough to identify the edition. This is all a list entry carries: the same
-  // `@id` on the record page holds the rest, and repeating twenty-two synopses
-  // into the catalogue page doubled its weight to say nothing new.
   const identity: Node = {
     '@type': 'Book',
     '@id': `${url}#book`,
@@ -265,7 +217,9 @@ export function bookNode(
     image: abs(origin, coverFor(book.id)),
   };
 
-  if (options.brief) return { ...identity, publisher: { '@type': 'Organization', name: book.publisher } };
+  if (options.brief) {
+    return { ...identity, publisher: { '@type': 'Organization', name: book.publisher } };
+  }
 
   return {
     ...identity,
@@ -273,8 +227,6 @@ export function bookNode(
     identifier: { '@type': 'PropertyValue', propertyID: 'ISBN', value: book.isbn },
     ...(book.pageCount ? { numberOfPages: book.pageCount } : {}),
     ...(synopsis ? { abstract: synopsis, description: synopsis } : {}),
-    // The publisher and catalogue records that name her as translator. They are
-    // the evidence behind the credit, so they belong in the data too.
     ...(book.sources.length > 0 ? { sameAs: book.sources } : {}),
     translationOfWork: {
       '@type': 'Book',
@@ -285,7 +237,6 @@ export function bookNode(
   };
 }
 
-/** The catalogue, as an ordered list of editions — newest first, as it is shown. */
 export function catalogueNode(locale: Locale, origin: URL | string, canonical: string): Node {
   const t = useTranslations(locale);
   return {
@@ -303,10 +254,6 @@ export function catalogueNode(locale: Locale, origin: URL | string, canonical: s
   };
 }
 
-/**
- * Her academic output. Each entry is a work whose author list includes her, so
- * the publication record and the translation record resolve to the same person.
- */
 export function publicationNodes(locale: Locale, origin: URL | string): Node[] {
   const KINDS: Record<string, string> = {
     article: 'ScholarlyArticle',
@@ -320,15 +267,16 @@ export function publicationNodes(locale: Locale, origin: URL | string): Node[] {
     '@id': `${abs(origin, sectionPath(locale, 'about'))}#publication-${index + 1}`,
     name: entry.title,
     datePublished: String(entry.year),
-    // Citation order, hers first: the record is on her site.
-    author: [{ '@id': personId(origin) }, ...(entry.with ?? []).map((name) => ({ '@type': 'Person', name }))],
+    author: [
+      { '@id': personId(origin) },
+      ...(entry.with ?? []).map((name) => ({ '@type': 'Person', name })),
+    ],
     isPartOf: { '@type': 'CreativeWork', name: entry.venue },
     ...(entry.href ? { url: entry.href, sameAs: entry.href } : {}),
     ...(entry.kind === 'thesis' ? { inSupportOf: 'PhD', sourceOrganization: URV } : {}),
   }));
 }
 
-/** Questions the contact page answers, in the form an answer engine can lift. */
 export function questionNodes(
   entries: Array<{ question: string; answer: string }>,
   canonical: string,

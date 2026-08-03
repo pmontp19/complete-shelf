@@ -7,23 +7,9 @@ import { collectionFacts, listOf } from '~/data/facts';
 import { useTranslations } from '~/i18n/ui';
 
 /**
- * `/llms.txt` — the site in one file, for a reader that has no eyes.
- *
- * An answer engine asked "who translated Der Bienenzüchter von Aleppo into
- * Catalan?" has to find the credit, and the credit lives on a page whose most
- * distinctive feature is a WebGL shelf it cannot see. This is the same
- * information as a flat outline: what the site is, what is verifiable about it,
- * and one line per record with the ISBN that makes the record citable.
- *
- * Written in English regardless of the reader's language — it is a machine index,
- * not a page, and the five human versions are linked from it. It stays honest by
- * construction: everything below is read from `books.json` and `profile.ts`.
- *
- * There is a longer companion at `/llms-full.txt` with the synopses and the
- * biography in full.
+ * `/llms.txt` — the site as a flat index, for a reader that cannot see a WebGL
+ * shelf. English, because it is a machine index; `/llms-full.txt` has the text.
  */
-
-/** The site speaks five languages; the index links the English set and names the rest. */
 const INDEX_LOCALE: Locale = 'en';
 
 export const GET: APIRoute = ({ site }) => {

@@ -44,10 +44,7 @@ interface Props {
   ogImage?: SocialImage;
   /** Open Graph object type; `website` unless the page is really something else. */
   ogType?: string;
-  /**
-   * Extra schema.org types for the page node, on top of the one its route
-   * implies — the contact page is both a `ContactPage` and an `FAQPage`.
-   */
+  /** Extra types for the page node: the contact page is also an `FAQPage`. */
   pageTypes?: string[];
   /** What the page is chiefly about, inlined into the page node. */
   mainEntity?: Node | Node[];
@@ -88,7 +85,7 @@ const alternates = LOCALES.map((code) => ({
   href: new URL(translatePath(code, page), origin).href,
 }));
 
-/** The default card is 1200×630, the size `scripts/build-og.mjs` renders it at. */
+// 1200×630, the size `scripts/build-og.mjs` renders the default card at.
 const social: SocialImage = ogImage ?? {
   src: assetPath('og-default.png'),
   width: 1200,
@@ -97,11 +94,7 @@ const social: SocialImage = ogImage ?? {
 };
 const socialImage = new URL(social.src, origin).href;
 
-/**
- * A portrait image in a `summary_large_image` card is cropped to a letterbox and
- * loses the top and bottom of the cover, so a book's own jacket gets the small
- * square card instead. Anything landscape keeps the wide one.
- */
+// A portrait jacket in a wide card is cropped through the middle.
 const twitterCard = social.width >= social.height ? 'summary_large_image' : 'summary';
 
 const tintStyle = tint ? `--tint:${tint.color};--tint-contrast:${tint.contrast};` : undefined;
@@ -109,11 +102,6 @@ const tintStyle = tint ? `--tint:${tint.color};--tint-contrast:${tint.contrast};
 const steps = breadcrumbSteps(locale, page, title, origin);
 const types = [pageTypeFor(page), ...pageTypes];
 
-/**
- * One `@graph` for the page: her, the site, this page, its trail, and whatever
- * the page adds. Linked by `@id` rather than repeated, so every page states the
- * same facts about the same entities.
- */
 const jsonLd = {
   '@context': 'https://schema.org',
   '@graph': [
@@ -151,9 +139,7 @@ const jsonLd = {
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical.href} />
-    {/* Explicit rather than left to the default: the two `max-…` directives are
-        what let a result carry a full-size cover and an untruncated snippet, and
-        they are only read if a robots directive is actually present. */}
+    {/* The `max-…` directives are only read if a robots directive is present. */}
     <meta
       name="robots"
       content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"
@@ -186,8 +172,7 @@ const jsonLd = {
         <meta property="og:locale:alternate" content={LOCALE_TAGS[code].replace('-', '_')} />
       ))
     }
-    {/* Spelled out rather than left to fall back to the Open Graph tags: some
-        scrapers read only the `twitter:` set, and then a page has no card. */}
+    {/* Spelled out: some scrapers read only the `twitter:` set. */}
     <meta name="twitter:card" content={twitterCard} />
     <meta name="twitter:title" content={fullTitle} />
     <meta name="twitter:description" content={description} />
@@ -197,10 +182,6 @@ const jsonLd = {
     <meta name="theme-color" content="#f7f3ec" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#16130f" media="(prefers-color-scheme: dark)" />
     <link rel="icon" href={assetPath('favicon.svg')} type="image/svg+xml" />
-    {/* `/llms.txt` is deliberately *not* linked from here as a `rel="alternate"`:
-        it is an index of the whole site, not a plain-text rendering of this page,
-        and saying otherwise would be a false statement on 132 pages. It is
-        announced in `robots.txt`, which is where the convention puts it. */}
 
     {/* No webfonts on purpose: the type stacks in global.css resolve locally,
         so the site has zero third-party requests and renders instantly offline. */}

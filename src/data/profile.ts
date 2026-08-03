@@ -22,11 +22,7 @@ export interface Publication {
   title: string;
   /** Journal, publisher or awarding institution. */
   venue: string;
-  /**
-   * What kind of work it is. Invisible on the page — the citation already says
-   * so — but it is what the structured data turns into a schema.org type, and
-   * guessing it from the venue string would misfile the reports as articles.
-   */
+  /** Invisible on the page; it is what the structured data turns into a type. */
   kind: 'article' | 'chapter' | 'report' | 'thesis';
   /** Co-authors in citation order, excluding her. */
   with?: string[];

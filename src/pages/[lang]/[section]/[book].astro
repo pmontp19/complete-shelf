@@ -59,9 +59,6 @@ const rows: Array<{ label: string; value: string }> = [
     : []),
 ];
 
-// The edition itself, as the thing this page *is* about. The layout hangs it off
-// the page node and links its translator to the site's Person, so the credit is
-// one statement rather than two coincidences.
 const bookSchema = bookNode(book, locale, Astro.site ?? new URL(Astro.url.origin));
 ---
 
@@ -78,9 +75,7 @@ const bookSchema = bookNode(book, locale, Astro.site ?? new URL(Astro.url.origin
   tint={{ color: palette.spineColor, contrast: palette.textColor }}
 >
   <Fragment slot="head">
-    {/* The cover is this page's largest element and its likely LCP, and it is
-        discoverable in the markup rather than by script — so preloading it costs
-        one line and moves it ahead of the stylesheet's own images. */}
+    {/* This page's LCP. */}
     <link rel="preload" as="image" href={coverFor(book.id)} fetchpriority="high" />
     <meta property="book:isbn" content={book.isbn} />
     <meta property="book:release_date" content={String(book.year)} />

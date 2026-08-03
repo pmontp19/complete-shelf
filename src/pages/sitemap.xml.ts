@@ -10,13 +10,8 @@ import type { PageRef } from '~/i18n/page-ref';
  * `xhtml:link` alternates — the part search engines actually use to group a
  * multilingual site — and so a record page can declare the cover it shows.
  *
- * The alternates are language-only tags (`ca`, `en`), matching the `hreflang`
- * links in the head; see `HREFLANGS` for why they are not `LOCALE_TAGS`.
- *
- * There is deliberately no `lastmod`. Nothing here records when a record last
- * changed, and one build timestamp stamped identically onto every URL is a date
- * about the deploy rather than about the page — which is exactly the pattern
- * search engines learn to ignore.
+ * No `lastmod`: nothing here records when a record changed, and one build
+ * timestamp on every URL is a date about the deploy.
  */
 const PAGES: PageRef[] = [
   { kind: 'home' },
@@ -55,8 +50,6 @@ export const GET: APIRoute = ({ site }) => {
       )}" />`;
       const priority = page.kind === 'home' ? '1.0' : page.kind === 'section' ? '0.8' : '0.6';
 
-      // The cover is the one image here worth finding on its own, and the record
-      // page is where an image search should land.
       let image = '';
       if (page.kind === 'book') {
         const book = ALL_BOOKS.find((entry) => entry.id === page.slug);

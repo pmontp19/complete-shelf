@@ -4,16 +4,13 @@ import { ALL_BOOKS, type Category, type SourceLanguage, type TargetLanguage } fr
 import { PROFILE } from './profile';
 
 /**
- * Everything the site says about the collection *as a whole*, derived from the
- * bibliography rather than written down anywhere. The colophon on the home page,
- * the answers in the FAQ, `llms.txt` and the structured data all read from here,
- * so none of them can claim twenty-two volumes after the twenty-third is added.
+ * Everything the site says about the collection as a whole, derived rather than
+ * written down. The colophon, the FAQ and `llms.txt` all read from here.
  */
 export interface CollectionFacts {
   count: number;
   firstYear: number;
   lastYear: number;
-  /** `2019–2026`, or a single year while the bibliography has only one. */
   span: string;
   publishers: string[];
   sourceLanguages: SourceLanguage[];
@@ -29,12 +26,6 @@ export interface CollectionFacts {
   workingLanguages: string;
 }
 
-/**
- * A conjunction list in the reader's own language, so an answer reads as a
- * sentence rather than as a row of separators. `Intl` knows that Catalan puts
- * "i" (and "e" before an i-sound) where English puts "and"; hard-coding a
- * separator per locale would not.
- */
 export function listOf(locale: Locale, items: readonly string[]): string {
   return new Intl.ListFormat(LOCALE_TAGS[locale], {
     style: 'long',
@@ -49,8 +40,8 @@ export function collectionFacts(locale: Locale): CollectionFacts {
   const firstYear = years.length > 0 ? Math.min(...years) : new Date().getUTCFullYear();
   const lastYear = years.length > 0 ? Math.max(...years) : firstYear;
 
-  // Sorted by first appearance in the bibliography, which is newest first, so
-  // the most recent work leads every list.
+  // In order of first appearance, which is newest first, so the most recent work
+  // leads every list.
   const unique = <T>(values: T[]): T[] => [...new Set(values)];
   const sourceLanguages = unique(ALL_BOOKS.map((book) => book.originalLanguage));
   const targetLanguages = unique(ALL_BOOKS.map((book) => book.targetLanguage));
@@ -75,13 +66,14 @@ export function collectionFacts(locale: Locale): CollectionFacts {
       targetLanguages.map((code) => t.languages[code]),
     ),
     publisherList: listOf(locale, publishers),
-    // The genre labels are written for a table heading, so they are capitalised;
-    // inside a sentence they should not be. Except in German, where the nouns
-    // keep their capitals wherever they stand.
+    // The genre labels are written for a table heading, so they carry a capital;
+    // inside a sentence they should not, except in German.
     genreList: listOf(
       locale,
       categories.map((code) =>
-        locale === 'de' ? t.categories[code] : t.categories[code].toLocaleLowerCase(LOCALE_TAGS[locale]),
+        locale === 'de'
+          ? t.categories[code]
+          : t.categories[code].toLocaleLowerCase(LOCALE_TAGS[locale]),
       ),
     ),
     location: PROFILE.location[locale],

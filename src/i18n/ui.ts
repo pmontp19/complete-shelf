@@ -1,9 +1,6 @@
 import type { Locale } from './config';
 
-/**
- * The questions the contact page answers, in the order they are asked. Fixed
- * keys rather than an array so every locale is required to answer all of them.
- */
+/** Fixed keys, not an array, so every locale is required to answer all of them. */
 export const FAQ_KEYS = ['languages', 'volume', 'genres', 'legal', 'where', 'commission'] as const;
 
 export type FaqKey = (typeof FAQ_KEYS)[number];
@@ -96,11 +93,7 @@ export interface Dictionary {
     languages: string;
     metaDescription: string;
   };
-  /**
-   * Questions the contact page answers in full. The keys are fixed, so a locale
-   * cannot quietly ship four of the six; the answers carry `{token}`s filled from
-   * the bibliography, so none of them can quietly go out of date either.
-   */
+  /** Answers carry `{token}`s filled from the bibliography. */
   faq: { title: string; entries: Record<FaqKey, { question: string; answer: string }> };
   footer: { rights: string; coverNotice: string; colophon: string };
 }

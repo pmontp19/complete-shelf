@@ -7,17 +7,9 @@ import { collectionFacts } from '~/data/facts';
 import { useTranslations } from '~/i18n/ui';
 
 /**
- * `/llms-full.txt` — the whole site as one plain-text document.
- *
- * `/llms.txt` is an index: enough to decide which page answers a question. This
- * is the text itself, so a retrieval step that has already decided can quote from
- * one fetch instead of crawling 132 pages of a site whose home page is a WebGL
- * canvas. Both files are generated from `books.json` and `profile.ts`, so neither
- * can drift from what the pages show.
- *
- * Each record is given in English and in Catalan: English because it is what most
- * questions arrive in, Catalan because that is the language the books were
- * published in and the language their titles and synopses are quotable in.
+ * `/llms-full.txt` — the whole site as one plain-text document, so a retrieval
+ * step can quote it in one fetch instead of crawling 132 pages. Each record is
+ * given in English and in the language it was published in.
  */
 const PRIMARY: Locale = 'en';
 const PUBLISHED: Locale = DEFAULT_LOCALE;
@@ -42,7 +34,6 @@ export const GET: APIRoute = ({ site }) => {
     '',
   );
 
-  // ---------------------------------------------------------------- biography --
   push('## Biography', '');
   for (const paragraph of bioFor(PRIMARY)) push(paragraph, '');
 
@@ -62,7 +53,6 @@ export const GET: APIRoute = ({ site }) => {
   push('### Biografia (català)', '');
   for (const paragraph of bioFor(PUBLISHED)) push(paragraph, '');
 
-  // ------------------------------------------------------------- bibliography --
   push(`## Translations (${facts.count})`, '');
   push(
     'Newest first. Every credit is verified on the publisher’s own catalogue record and on the ' +
@@ -92,15 +82,12 @@ export const GET: APIRoute = ({ site }) => {
     const catalan = book.synopsis[PUBLISHED];
     if (english) push(`Synopsis: ${english}`, '');
     if (catalan) push(`Sinopsi (català): ${catalan}`, '');
-    // A record with neither still gets whatever synopsis exists, rather than
-    // nothing: the fallback chain is the same one the pages use.
     if (!english && !catalan) {
       const fallback = synopsisFor(book, PRIMARY);
       if (fallback) push(`Synopsis: ${fallback}`, '');
     }
   });
 
-  // ----------------------------------------------------------------- research --
   push(`## ${t.about.research}`, '');
   for (const entry of PROFILE.publications) {
     const authors = [PROFILE.name, ...(entry.with ?? [])].join(', ');
@@ -111,7 +98,6 @@ export const GET: APIRoute = ({ site }) => {
   }
   push('');
 
-  // ------------------------------------------------------------------ contact --
   push('## Contact', '');
   push(
     ...(facts.email ? [`- Email: ${facts.email}`] : []),

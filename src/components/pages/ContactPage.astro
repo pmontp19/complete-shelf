@@ -11,12 +11,7 @@ interface Props {
 const { locale } = Astro.props;
 const t = useTranslations(locale);
 
-/**
- * The same six answers the page's `FAQPage` markup carries — built from the
- * bibliography, so the count and the publishers in them cannot fall behind it.
- * Plain prose in a `dl` rather than a set of `details`: an answer that has to be
- * clicked open is an answer a reader has to hunt for.
- */
+// The same six answers the page's `FAQPage` markup carries.
 const faq = faqEntries(locale);
 ---
 
@@ -104,8 +99,7 @@ const faq = faqEntries(locale);
     border-top: 1px solid var(--rule);
   }
 
-  /* `h2` inherits the display face; here it is a label like the others above it,
-     so it takes their type and not a second heading size. */
+  /* A label like the others above it, not a second heading size. */
   .faq h2 {
     font-size: 0.72rem;
     font-weight: 500;

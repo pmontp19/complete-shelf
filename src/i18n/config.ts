@@ -27,15 +27,9 @@ export const LOCALE_TAGS: Record<Locale, string> = {
 };
 
 /**
- * Language-only tags, used for `hreflang` and nothing else.
- *
- * Deliberately not `LOCALE_TAGS`: `hreflang="en-GB"` claims the page is *for
- * the United Kingdom*, so a reader in Ireland or the United States matches
- * nothing and falls through to `x-default` — which here is Catalan. There is one
- * English version of this site and it is for every English speaker, so the
- * alternates say `en`. `LOCALE_TAGS` stays regional because `lang="en-GB"` is a
- * true statement about the prose (and drives hyphenation and quote marks), and
- * because `Intl` wants a region.
+ * `hreflang` only. Not `LOCALE_TAGS`: `hreflang="en-GB"` would claim the English
+ * version is *for the United Kingdom*, leaving every other English speaker to
+ * fall through to `x-default`, which here is Catalan.
  */
 export const HREFLANGS: Record<Locale, string> = {
   ca: 'ca',

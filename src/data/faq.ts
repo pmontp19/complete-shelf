@@ -9,14 +9,9 @@ export interface FaqEntry {
 }
 
 /**
- * The contact page's questions, with the numbers filled in from the
- * bibliography.
- *
- * They are built here rather than in the component because two things need
- * exactly the same six answers: the page a reader sees, and the `FAQPage` block
- * in the structured data. An answer engine that quotes the markup and a reader
- * who reads the page have to be told the same thing — that is the whole bargain —
- * and the only way to guarantee it is to render both from one list.
+ * The contact page's answers, with the figures filled in from the bibliography.
+ * Built here because two things need exactly the same six: the prose a reader
+ * sees, and the `FAQPage` markup. `npm test` fails if they ever differ.
  */
 export function faqEntries(locale: Locale): FaqEntry[] {
   const t = useTranslations(locale);
