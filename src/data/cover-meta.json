@@ -2,15 +2,15 @@
   {
     "id": "1000-receptes-dor",
     "source": "url",
-    "spineColor": "#352e2b",
-    "textColor": "#faf7f2",
+    "spineColor": "#ba7349",
+    "textColor": "#1a1613",
     "width": 800,
     "height": 1211
   },
   {
     "id": "amics-amants-i-allo-tan-terrible",
     "source": "url",
-    "spineColor": "#4e4c4b",
+    "spineColor": "#656a6b",
     "textColor": "#faf7f2",
     "width": 800,
     "height": 1229
@@ -18,23 +18,23 @@
   {
     "id": "anhel",
     "source": "url",
-    "spineColor": "#201e1d",
-    "textColor": "#faf7f2",
+    "spineColor": "#827f7b",
+    "textColor": "#1a1613",
     "width": 800,
     "height": 1209
   },
   {
     "id": "ansia",
     "source": "url",
-    "spineColor": "#945c43",
-    "textColor": "#faf7f2",
+    "spineColor": "#c76e48",
+    "textColor": "#1a1613",
     "width": 800,
     "height": 1211
   },
   {
     "id": "campus-drivers-1-sense-frens",
     "source": "url",
-    "spineColor": "#8e7f9a",
+    "spineColor": "#cbbf71",
     "textColor": "#1a1613",
     "width": 800,
     "height": 1218
@@ -42,7 +42,7 @@
   {
     "id": "campus-drivers-2-novio-perfecte",
     "source": "url",
-    "spineColor": "#74a58e",
+    "spineColor": "#48b9b0",
     "textColor": "#1a1613",
     "width": 800,
     "height": 1211
@@ -50,23 +50,23 @@
   {
     "id": "deixar-el-mon-enrere",
     "source": "url",
-    "spineColor": "#1b2623",
-    "textColor": "#faf7f2",
+    "spineColor": "#249b96",
+    "textColor": "#1a1613",
     "width": 800,
     "height": 1211
   },
   {
     "id": "el-cel-de-mitjanit",
     "source": "url",
-    "spineColor": "#596160",
-    "textColor": "#faf7f2",
+    "spineColor": "#778685",
+    "textColor": "#1a1613",
     "width": 800,
     "height": 1161
   },
   {
     "id": "el-passatger-stella-maris",
     "source": "url",
-    "spineColor": "#4d5669",
+    "spineColor": "#4970b3",
     "textColor": "#faf7f2",
     "width": 800,
     "height": 1229
@@ -74,7 +74,7 @@
   {
     "id": "els-deu-passos-cap-a-nanette",
     "source": "url",
-    "spineColor": "#6f6f70",
+    "spineColor": "#666666",
     "textColor": "#faf7f2",
     "width": 800,
     "height": 1209
@@ -82,15 +82,15 @@
   {
     "id": "furia",
     "source": "url",
-    "spineColor": "#b1706f",
-    "textColor": "#1a1613",
+    "spineColor": "#c04b44",
+    "textColor": "#faf7f2",
     "width": 800,
     "height": 1211
   },
   {
     "id": "la-casa-alemanya",
     "source": "url",
-    "spineColor": "#939385",
+    "spineColor": "#94968b",
     "textColor": "#1a1613",
     "width": 800,
     "height": 1224
@@ -98,23 +98,23 @@
   {
     "id": "la-mateixa-sang",
     "source": "url",
-    "spineColor": "#62493b",
-    "textColor": "#faf7f2",
+    "spineColor": "#bc6f42",
+    "textColor": "#1a1613",
     "width": 800,
     "height": 1221
   },
   {
     "id": "la-serp-i-les-ales-de-la-nit",
-    "source": "url",
-    "spineColor": "#56767f",
-    "textColor": "#faf7f2",
+    "source": "local",
+    "spineColor": "#2b8abc",
+    "textColor": "#1a1613",
     "width": 800,
-    "height": 1100
+    "height": 1184
   },
   {
     "id": "lany-de-la-llagosta",
     "source": "url",
-    "spineColor": "#3c3129",
+    "spineColor": "#ab5d2c",
     "textColor": "#faf7f2",
     "width": 800,
     "height": 1212
@@ -122,31 +122,31 @@
   {
     "id": "lapicultor-dalep",
     "source": "url",
-    "spineColor": "#3f6b63",
-    "textColor": "#faf7f2",
+    "spineColor": "#2ab2a5",
+    "textColor": "#1a1613",
     "width": 800,
     "height": 1218
   },
   {
     "id": "les-cendres-i-el-rei-maleit",
-    "source": "url",
-    "spineColor": "#715856",
+    "source": "local",
+    "spineColor": "#ae322c",
     "textColor": "#faf7f2",
     "width": 800,
-    "height": 1100
+    "height": 1219
   },
   {
     "id": "locell-i-el-cor-de-pedra",
     "source": "url",
-    "spineColor": "#544238",
-    "textColor": "#faf7f2",
+    "spineColor": "#b67044",
+    "textColor": "#1a1613",
     "width": 800,
     "height": 1214
   },
   {
     "id": "lultima-carta",
     "source": "url",
-    "spineColor": "#839690",
+    "spineColor": "#5e96b7",
     "textColor": "#1a1613",
     "width": 800,
     "height": 1211
@@ -154,15 +154,15 @@
   {
     "id": "mala-gent",
     "source": "url",
-    "spineColor": "#46484c",
-    "textColor": "#faf7f2",
+    "spineColor": "#838385",
+    "textColor": "#1a1613",
     "width": 800,
     "height": 1214
   },
   {
     "id": "riu-te-de-les-bodes",
     "source": "url",
-    "spineColor": "#9e947a",
+    "spineColor": "#cdaa70",
     "textColor": "#1a1613",
     "width": 800,
     "height": 1218
@@ -170,7 +170,7 @@
   {
     "id": "un-un-sol-recipient",
     "source": "url",
-    "spineColor": "#879682",
+    "spineColor": "#69bda8",
     "textColor": "#1a1613",
     "width": 800,
     "height": 1076

@@ -42,6 +42,17 @@ export function mixHexColor(a: string, b: string, t: number): string {
 }
 
 /**
+ * The other end of the ink the palette chose. `textColor` is always one of the
+ * pipeline's two foregrounds — near-white or near-black — so its opposite is
+ * the direction to push a ground in when it needs to move away from the type.
+ */
+function oppositeInk(textColor: string): string {
+  const hsl = { h: 0, s: 0, l: 0 };
+  new THREE.Color(textColor).getHSL(hsl);
+  return hsl.l > 0.5 ? '#12100e' : '#fbf8f3';
+}
+
+/**
  * Restrained, editorial spine artwork: a flat ground colour, the title set
  * vertically (rotated once, so it never mirrors), and the publisher name in
  * small caps near the foot. Used whenever `book.spineUrl` is absent or fails
@@ -54,10 +65,12 @@ export function createSpineTexture(book: ShelfBook, width = 256, height = 1024):
   const ctx = canvas.getContext('2d');
   if (!ctx) return finalizeCanvasTexture(new THREE.CanvasTexture(canvas));
 
-  // Dominant cover colours are often near-black, and a wall of them renders as
-  // a row of dead bricks. Lifting the ground a few percent towards the spine's
-  // own foreground keeps very dark cloth reading as cloth.
-  ctx.fillStyle = mixHexColor(book.spineColor, book.textColor, 0.07);
+  // Ground, pushed a few percent *away* from the type rather than towards it.
+  // The lift used to run the other way, to keep near-black spine colours from
+  // reading as dead bricks — but that darkness is now dealt with where it comes
+  // from, in the palette the cover pipeline derives, and here it only ate into
+  // the contrast the title needs on a strip this narrow.
+  ctx.fillStyle = mixHexColor(book.spineColor, oppositeInk(book.textColor), 0.08);
   ctx.fillRect(0, 0, width, height);
 
   // Faint cloth-like vertical grain so the spine isn't a dead flat swatch.
@@ -75,11 +88,13 @@ export function createSpineTexture(book: ShelfBook, width = 256, height = 1024):
 
   // A shallow curve of light down the spine — real cloth over boards is never
   // evenly lit, and this is what stops a rack of them looking like a barcode.
+  // Kept gentle: the two hinge shadows are what a narrow spine can least
+  // afford, since they fall exactly where wrapped title lines reach.
   const round = ctx.createLinearGradient(0, 0, width, 0);
-  round.addColorStop(0, 'rgba(0,0,0,0.3)');
-  round.addColorStop(0.32, 'rgba(255,255,255,0.09)');
-  round.addColorStop(0.72, 'rgba(255,255,255,0.03)');
-  round.addColorStop(1, 'rgba(0,0,0,0.26)');
+  round.addColorStop(0, 'rgba(0,0,0,0.2)');
+  round.addColorStop(0.32, 'rgba(255,255,255,0.12)');
+  round.addColorStop(0.72, 'rgba(255,255,255,0.05)');
+  round.addColorStop(1, 'rgba(0,0,0,0.17)');
   ctx.fillStyle = round;
   ctx.fillRect(0, 0, width, height);
 
@@ -104,9 +119,15 @@ export function createSpineTexture(book: ShelfBook, width = 256, height = 1024):
   ctx.fillStyle = book.textColor;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  const titleSize = Math.max(22, Math.round(width * 0.11));
-  ctx.font = `${titleSize}px Georgia, "Times New Roman", serif`;
-  drawTracked(ctx, book.title.toUpperCase(), 0, 0, titleSize * 0.06);
+  const titleSize = Math.max(26, Math.round(width * 0.125));
+  ctx.font = `600 ${titleSize}px Georgia, "Times New Roman", serif`;
+  // A spine is only a few dozen screen pixels wide once it's in perspective,
+  // so the type needs help surviving the downsample: a halo in the opposite
+  // ink separates every stroke from the ground even where the shading is
+  // closest to the type's own value.
+  ctx.shadowColor = oppositeInk(book.textColor);
+  ctx.shadowBlur = titleSize * 0.5;
+  drawTracked(ctx, book.title.toUpperCase(), 0, 0, titleSize * 0.06, titleSize);
   ctx.restore();
 
   // Publisher, small, near the foot of the spine.
@@ -117,16 +138,27 @@ export function createSpineTexture(book: ShelfBook, width = 256, height = 1024):
   ctx.globalAlpha = 0.85;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  const pubSize = Math.max(14, Math.round(width * 0.052));
+  const pubSize = Math.max(14, Math.round(width * 0.055));
   ctx.font = `${pubSize}px Georgia, "Times New Roman", serif`;
-  drawTracked(ctx, book.publisher.toUpperCase(), 0, 0, pubSize * 0.1);
+  drawTracked(ctx, book.publisher.toUpperCase(), 0, 0, pubSize * 0.1, pubSize);
   ctx.restore();
 
   return finalizeCanvasTexture(new THREE.CanvasTexture(canvas));
 }
 
-/** Draws text centered at (x, y) with manual letter-spacing, wrapping if too wide. */
-function drawTracked(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, tracking: number): void {
+/**
+ * Draws text centered at (x, y) with manual letter-spacing, wrapping if too
+ * wide. `fontSize` is passed in rather than read back off `ctx.font`, which
+ * cannot be parsed for it once the shorthand carries a weight.
+ */
+function drawTracked(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  tracking: number,
+  fontSize: number,
+): void {
   const maxWidth = ctx.canvas.height * 0.82;
   const measure = (s: string) => {
     let w = 0;
@@ -147,7 +179,7 @@ function drawTracked(ctx: CanvasRenderingContext2D, text: string, x: number, y: 
   }
   if (current) lines.push(current);
   const cappedLines = lines.slice(0, 3);
-  const lineHeight = parseInt(ctx.font, 10) * 1.25;
+  const lineHeight = fontSize * 1.25;
   const startY = y - ((cappedLines.length - 1) * lineHeight) / 2;
 
   cappedLines.forEach((line, lineIndex) => {

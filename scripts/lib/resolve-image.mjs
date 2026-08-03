@@ -4,7 +4,12 @@
 // "no cover available" — only logs and moves on.
 
 import sharp from "sharp";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { fetchBuffer, fetchText } from "./http.mjs";
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 const MIN_BYTES = 3000; // Open Library returns a tiny placeholder (often ~1x1px, ~40-100 bytes) when it has no cover.
 const MIN_WIDTH = 200;
@@ -21,8 +26,36 @@ async function isUsableImage(buffer) {
   }
 }
 
+/**
+ * A `sourceUrl` that isn't an http(s) URL is read from disk, resolved against
+ * the repository root. That is the escape hatch for the cases where the
+ * publisher's own CDN serves something unusable — an angled 3D mock-up, say —
+ * and the flat artwork has to be committed alongside the code instead.
+ */
+async function tryLocalFile(sourceUrl, log) {
+  const relative = sourceUrl.replace(/^file:\/\//, "");
+  const absolute = path.resolve(ROOT, relative);
+  // Keep the override confined to the repo: a value from data should not be
+  // able to reach into the wider filesystem.
+  if (absolute !== ROOT && !absolute.startsWith(ROOT + path.sep)) {
+    log(`  local sourceUrl "${sourceUrl}" resolves outside the repository — ignoring`);
+    return null;
+  }
+  try {
+    const buffer = await readFile(absolute);
+    if (await isUsableImage(buffer)) {
+      return { buffer, source: "local" };
+    }
+    log(`  local sourceUrl "${sourceUrl}" is not a usable image (${buffer.length} bytes)`);
+  } catch (err) {
+    log(`  local sourceUrl "${sourceUrl}" could not be read: ${err.message}`);
+  }
+  return null;
+}
+
 async function tryExplicitUrl(sourceUrl, log) {
   if (!sourceUrl) return null;
+  if (!/^https?:\/\//i.test(sourceUrl)) return tryLocalFile(sourceUrl, log);
   try {
     const { status, buffer } = await fetchBuffer(sourceUrl);
     if (status >= 200 && status < 300 && (await isUsableImage(buffer))) {
@@ -88,7 +121,7 @@ async function tryGoogleBooks(isbn, log) {
 /**
  * @param {{ sourceUrl?: string, isbn?: string }} entry
  * @param {(msg: string) => void} log
- * @returns {Promise<{ buffer: Buffer, source: 'url'|'openlibrary'|'googlebooks' } | null>}
+ * @returns {Promise<{ buffer: Buffer, source: 'url'|'local'|'openlibrary'|'googlebooks' } | null>}
  */
 export async function resolveImage(entry, log = () => {}) {
   const fromUrl = await tryExplicitUrl(entry.sourceUrl, log);

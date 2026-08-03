@@ -485,8 +485,14 @@ export const mountShelf: MountShelf = async (container, options) => {
       metalness: 0.02,
       transparent: true,
     });
+    // White whenever a map is in play: a standard material multiplies its map
+    // by `color`, so tinting a spine texture that already paints the spine
+    // colour squares the ground and drags the title down with it — which is
+    // how every generated spine ended up near-black with type you couldn't
+    // make out. The flat colour is only the ground for the moment before a
+    // `spineUrl` texture arrives.
     const spineMaterial = new THREE.MeshStandardMaterial({
-      color: book.spineUrl ? 0xffffff : book.spineColor,
+      color: book.spineUrl ? book.spineColor : 0xffffff,
       roughness: 0.88,
       metalness: 0.02,
       transparent: true,

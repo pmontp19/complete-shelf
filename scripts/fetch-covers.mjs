@@ -23,6 +23,7 @@ import { fileURLToPath } from "node:url";
 import { resolveImage } from "./lib/resolve-image.mjs";
 import { buildFallbackSvg } from "./lib/fallback-cover.mjs";
 import { tameForSpine, readableTextColor, toHex } from "./lib/color.mjs";
+import { dominantCoverColor } from "./lib/dominant-color.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -104,10 +105,10 @@ async function loadExistingMeta() {
 
 /** Extract dominant colour + readable text colour + dimensions from a rasterised cover buffer. */
 async function analyzeCover(buffer) {
-  const image = sharp(buffer);
-  const [metadata, stats] = await Promise.all([image.metadata(), image.stats()]);
-  const [rCh, gCh, bCh] = stats.channels;
-  const rawRgb = { r: rCh.mean, g: gCh.mean, b: bCh.mean };
+  const [metadata, rawRgb] = await Promise.all([
+    sharp(buffer).metadata(),
+    dominantCoverColor(buffer),
+  ]);
   const spineRgb = tameForSpine(rawRgb);
   const spineColor = toHex(spineRgb);
   const textColor = readableTextColor(spineRgb);
