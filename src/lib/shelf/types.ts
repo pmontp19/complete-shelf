@@ -13,6 +13,13 @@ export interface ShelfBook {
   id: string;
   /** Title of the translation (already localised by the caller). */
   title: string;
+  /**
+   * Short form of the title for the spine, where the full one would have to be
+   * set too small to read. Falls back to `title`.
+   */
+  spineTitle?: string;
+  /** Short author credit for the spine — surnames only. Falls back to `author`. */
+  spineAuthor?: string;
   /** Title in the original language. */
   originalTitle: string;
   /** Original author. */

@@ -53,12 +53,21 @@ function oppositeInk(textColor: string): string {
 }
 
 /**
- * Restrained, editorial spine artwork: a flat ground colour, the title set
- * vertically (rotated once, so it never mirrors), and the publisher name in
- * small caps near the foot. Used whenever `book.spineUrl` is absent or fails
- * to load.
+ * Restrained, editorial spine artwork: a flat ground colour, the author's
+ * surname at the head, the title set vertically (rotated once, so it never
+ * mirrors) across the middle, and the imprint near the foot. Used whenever
+ * `book.spineUrl` is absent or fails to load.
+ *
+ * `ratio` is the spine's real proportion — its thickness divided by its height,
+ * as the geometry has it. The canvas has to carry the same proportion: a fixed
+ * 256x1024 sheet stretched across a face between 0.055 and 0.16 world units
+ * wide squashed every glyph to roughly a third of its width along the reading
+ * direction, which is why the titles read as a smear rather than as words.
  */
-export function createSpineTexture(book: ShelfBook, width = 256, height = 1024): THREE.CanvasTexture {
+export function createSpineTexture(book: ShelfBook, ratio: number, height = 1024): THREE.CanvasTexture {
+  // Floored so the very thinnest volume still has enough texels across the
+  // spine for the type to have edges rather than stairs.
+  const width = Math.max(64, Math.round(height * ratio));
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
@@ -111,87 +120,151 @@ export function createSpineTexture(book: ShelfBook, width = 256, height = 1024):
   ctx.stroke();
   ctx.globalAlpha = 1;
 
-  // Title, set vertically bottom-to-top (the conventional spine reading
-  // direction). Drawn once, upright, then rotated as a whole — never mirrored.
-  ctx.save();
-  ctx.translate(width / 2, height / 2);
-  ctx.rotate(-Math.PI / 2);
-  ctx.fillStyle = book.textColor;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  const titleSize = Math.max(26, Math.round(width * 0.125));
-  ctx.font = `600 ${titleSize}px Georgia, "Times New Roman", serif`;
-  // A spine is only a few dozen screen pixels wide once it's in perspective,
-  // so the type needs help surviving the downsample: a halo in the opposite
-  // ink separates every stroke from the ground even where the shading is
-  // closest to the type's own value.
-  ctx.shadowColor = oppositeInk(book.textColor);
-  ctx.shadowBlur = titleSize * 0.5;
-  drawTracked(ctx, book.title.toUpperCase(), 0, 0, titleSize * 0.06, titleSize);
-  ctx.restore();
-
-  // Publisher, small, near the foot of the spine.
-  ctx.save();
-  ctx.translate(width / 2, height * 0.86);
-  ctx.rotate(-Math.PI / 2);
-  ctx.fillStyle = book.textColor;
-  ctx.globalAlpha = 0.85;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  const pubSize = Math.max(14, Math.round(width * 0.055));
-  ctx.font = `${pubSize}px Georgia, "Times New Roman", serif`;
-  drawTracked(ctx, book.publisher.toUpperCase(), 0, 0, pubSize * 0.1, pubSize);
-  ctx.restore();
+  // Three bands, the way a printed spine is set: the author at the head, the
+  // title across the middle, the imprint at the foot. The author is what tells
+  // one Crave volume from the next once the titles are down to one word, and
+  // the imprint alone never could — 21 of the 22 read "Columna".
+  //
+  // Each line is fitted to its band rather than set at a fixed size and wrapped:
+  // a strip this narrow cannot carry two lines of a title without the hinge
+  // shading falling straight through them, so a long title comes down in size
+  // instead of stacking.
+  //
+  // The ceiling on each size is a share of the spine's width — type cannot be
+  // taller than the strip it is printed on. The floor is a share of its *height*,
+  // which is the constant one: a thick spine is drawn wider on screen in the same
+  // proportion as its canvas, so what a glyph ends up measuring for the reader
+  // depends on the size against the canvas height and not against its width.
+  // Expressing the floor as a share of the width would make the thickest volumes
+  // — the ones with the most room — the first to lose their titles.
+  const halo = oppositeInk(book.textColor);
+  drawSpineLine(ctx, (book.spineAuthor ?? book.author).toUpperCase(), {
+    at: 0.15,
+    length: height * 0.15,
+    min: height * 0.011,
+    max: width * 0.15,
+    weight: 400,
+    tracking: 0.12,
+    alpha: 0.9,
+    ink: book.textColor,
+    halo,
+  });
+  drawSpineLine(ctx, (book.spineTitle ?? book.title).toUpperCase(), {
+    at: 0.525,
+    length: height * 0.54,
+    min: height * 0.024,
+    max: width * 0.42,
+    weight: 600,
+    tracking: 0.06,
+    ink: book.textColor,
+    halo,
+  });
+  drawSpineLine(ctx, book.publisher.toUpperCase(), {
+    at: 0.875,
+    length: height * 0.1,
+    min: height * 0.009,
+    max: width * 0.11,
+    weight: 400,
+    tracking: 0.16,
+    alpha: 0.8,
+    ink: book.textColor,
+    halo,
+  });
 
   return finalizeCanvasTexture(new THREE.CanvasTexture(canvas));
 }
 
+interface SpineLineOptions {
+  /** Where along the spine's length the line sits, 0 (head) to 1 (foot). */
+  at: number;
+  /** How far the line may run along the spine, in canvas pixels. */
+  length: number;
+  /** Font size bounds, in canvas pixels. */
+  min: number;
+  max: number;
+  weight: 400 | 600;
+  /** Letter-spacing as a fraction of the font size. */
+  tracking: number;
+  ink: string;
+  /** Colour of the halo that keeps the type off the ground. */
+  halo: string;
+  alpha?: number;
+}
+
 /**
- * Draws text centered at (x, y) with manual letter-spacing, wrapping if too
- * wide. `fontSize` is passed in rather than read back off `ctx.font`, which
- * cannot be parsed for it once the shorthand carries a weight.
+ * Sets one line of spine type: rotated a quarter turn so it reads bottom-to-top
+ * (the convention everywhere except a handful of German imprints), centred in
+ * its band, and scaled down — never wrapped — until it fits.
  */
-function drawTracked(
+function drawSpineLine(
   ctx: CanvasRenderingContext2D,
   text: string,
-  x: number,
-  y: number,
-  tracking: number,
-  fontSize: number,
+  options: SpineLineOptions,
 ): void {
-  const maxWidth = ctx.canvas.height * 0.82;
-  const measure = (s: string) => {
-    let w = 0;
-    for (const ch of s) w += ctx.measureText(ch).width + tracking;
-    return w - tracking;
-  };
-  const lines: string[] = [];
-  let current = '';
-  const words = text.split(' ');
-  for (const word of words) {
-    const candidate = current ? `${current} ${word}` : word;
-    if (measure(candidate) > maxWidth && current) {
-      lines.push(current);
-      current = word;
-    } else {
-      current = candidate;
-    }
-  }
-  if (current) lines.push(current);
-  const cappedLines = lines.slice(0, 3);
-  const lineHeight = fontSize * 1.25;
-  const startY = y - ((cappedLines.length - 1) * lineHeight) / 2;
+  const { width, height } = ctx.canvas;
+  const font = (size: number) => `${options.weight} ${size}px Georgia, "Times New Roman", serif`;
 
-  cappedLines.forEach((line, lineIndex) => {
-    const width = measure(line);
-    let cursor = x - width / 2;
-    const lineY = startY + lineIndex * lineHeight;
-    for (const ch of line) {
-      const charWidth = ctx.measureText(ch).width;
-      ctx.fillText(ch, cursor + charWidth / 2, lineY);
-      cursor += charWidth + tracking;
-    }
-  });
+  // Text metrics scale linearly with the font size, so one measuring pass at a
+  // reference size gives the length per pixel of type and the fit is arithmetic
+  // rather than a search.
+  const reference = 100;
+  ctx.font = font(reference);
+  const perPixel = measureTracked(ctx, text, reference * options.tracking) / reference;
+  const max = Math.max(options.min, options.max);
+  const size = Math.max(options.min, Math.min(max, options.length / perPixel));
+
+  ctx.font = font(size);
+  const tracking = size * options.tracking;
+  // Only reachable when even `min` is too big for the band, which means the
+  // title needs a `spineTitle` in the catalogue rather than more shrinking.
+  const line = truncateTracked(ctx, text, tracking, options.length);
+
+  ctx.save();
+  ctx.translate(width / 2, height * options.at);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = options.ink;
+  ctx.globalAlpha = options.alpha ?? 1;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  // A spine is only a few dozen screen pixels wide once it is in perspective,
+  // so the type needs help surviving the downsample: a halo in the opposite ink
+  // separates every stroke from the ground even where the shading across the
+  // spine is closest to the type's own value.
+  ctx.shadowColor = options.halo;
+  ctx.shadowBlur = size * 0.45;
+
+  let cursor = -measureTracked(ctx, line, tracking) / 2;
+  for (const character of line) {
+    const advance = ctx.measureText(character).width;
+    ctx.fillText(character, cursor + advance / 2, 0);
+    cursor += advance + tracking;
+  }
+  ctx.restore();
+}
+
+/** Length of `text` at the context's current font with `tracking` px added between glyphs. */
+function measureTracked(ctx: CanvasRenderingContext2D, text: string, tracking: number): number {
+  let length = 0;
+  for (const character of text) length += ctx.measureText(character).width + tracking;
+  return Math.max(0, length - tracking);
+}
+
+/** Trims `text` to `maxLength`, on a word boundary where one is close enough. */
+function truncateTracked(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  tracking: number,
+  maxLength: number,
+): string {
+  if (measureTracked(ctx, text, tracking) <= maxLength) return text;
+  let kept = '';
+  for (const character of text) {
+    if (measureTracked(ctx, `${kept}${character}…`, tracking) > maxLength) break;
+    kept += character;
+  }
+  const lastSpace = kept.lastIndexOf(' ');
+  if (lastSpace > kept.length * 0.6) kept = kept.slice(0, lastSpace);
+  return `${kept.trimEnd()}…`;
 }
 
 /**

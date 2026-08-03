@@ -20,6 +20,22 @@ languages, no backend and no third-party requests at runtime.
 
   Vertical scrolling always belongs to the page. A looping shelf has no end to escape past, so
   swallowing the wheel would strand the reader on it.
+
+  Each spine is set the way a printed one is: the author's surname at the head, the title across the
+  middle, the imprint at the foot. The canvas carries the spine's real proportions, so a volume 0.06
+  world units thick is drawn on a strip that narrow rather than on a fixed sheet stretched to fit —
+  which is what used to squash every glyph to about a third of its width. Long titles come down in
+  size rather than wrapping, and a title too long even for that gets a short form in the record
+  (`spineTitle`).
+- **View transitions between the catalogue and a record**, done by the browser across an ordinary
+  navigation. Opening a translation lifts its cover and title out of the grid and sets them down on
+  their own page; the header and footer hold still. This is `@view-transition` plus
+  `view-transition-name` in
+  [`src/styles/view-transitions.css`](src/styles/view-transitions.css) and costs no JavaScript at
+  all — Astro's `<ClientRouter />` would have added ~5.5 kB gzipped to every page and made the shelf
+  a client-side island to tear down and rebuild, for the same animation. The shelf page sits out:
+  snapshotting a live WebGL canvas is the most expensive thing here, and the shelf cannot travel
+  anyway. Browsers without the feature just navigate.
 - **Five languages** — Catalan (default), Spanish, English, German and French — with localised URL
   segments (`/ca/traduccions/`, `/de/uebersetzungen/`, …), `hreflang` alternates on every page, and a
   language switcher that keeps you on the page you were reading.
@@ -47,6 +63,9 @@ languages, no backend and no third-party requests at runtime.
     │   └── profile.ts      # biography, timeline and links, in five languages
     ├── i18n/               # locales, localised routes, UI dictionaries
     ├── lib/shelf/          # the three.js shelf, dependency-free
+    ├── styles/
+    │   ├── global.css      # the design system
+    │   └── view-transitions.css  # imported only by the pages that take part
     ├── components/
     ├── layouts/
     └── pages/
@@ -81,6 +100,11 @@ On Astro 7 `astro dev` starts a managed background daemon rather than holding th
    the shelf never has a hole in it.
 4. Synopses live in the record's `synopsis` object, keyed by locale. Missing locales fall back
    through Catalan → Spanish → English rather than rendering empty.
+5. The shelf's spine takes the title cut down to what a strip of type can carry: everything after the
+   first sentence break goes, as long as what is left still names the book. Add `spineTitle` to the
+   record where that rule can't win — a title that *is* one word, or one whose distinguishing half
+   comes second (“Campus Drivers 2. Nòvio perfecte” → “Nòvio perfecte”). The author line is derived,
+   never stored: surnames only, joined by · when a book has two.
 
 Everything else — the catalogue, the filters, the shelf, the sitemap, the five language versions —
 derives from that one record.

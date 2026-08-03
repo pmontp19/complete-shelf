@@ -1,0 +1,102 @@
+/* ---------------------------------------------------------------------------
+   Cross-document view transitions.
+
+   Loaded by the catalogue, the record pages and the two prose sections — not by
+   the home page. It is deliberately a separate sheet rather than part of
+   global.css, because a document only takes part in a transition if it opts in,
+   and where it opts in is a decision worth being able to read in one place.
+
+   The browser does all of this between two ordinary page loads: there is no
+   client-side router and not one byte of JavaScript. Every navigation is still a
+   real navigation to a real static document, so nothing about crawling, caching
+   or the no-JS experience changes, and browsers without the feature ignore the
+   at-rule and navigate exactly as they did before.
+
+   The shelf page stays out. Snapshotting a live WebGL canvas is by far the most
+   expensive thing on this site — it roughly trebled the paint the browser holds
+   back while it sets a transition up, measured in this repo — and the shelf's
+   own centrepiece cannot travel anyway, because a canvas has no snapshot the
+   next document can pick up. Opting it in is one import in src/pages/[lang]/index.astro
+   if that trade ever looks worth it.
+   --------------------------------------------------------------------------- */
+
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-group(root) {
+  animation-duration: 260ms;
+  animation-timing-function: var(--ease);
+}
+
+/*
+ * A cover travelling from the grid to its record page is one object moving, so
+ * the two snapshots must not crossfade through each other: the new one sits on
+ * top, opaque, and only the box animates. Both are the same artwork, so filling
+ * the box rather than keeping each snapshot's own ratio is invisible.
+ */
+::view-transition-group(.vt-cover) {
+  animation-duration: 420ms;
+  animation-timing-function: var(--ease-out);
+}
+
+/*
+ * `:not(:only-child)` is how CSS asks whether the name matched on both sides. A
+ * cover that exists on only one side — the other 21 in the grid — is the only
+ * child of its image pair, and those must keep the browser's own crossfade:
+ * without it they hold at full opacity over the arriving page for the whole
+ * duration and then blink out.
+ */
+::view-transition-old(.vt-cover):not(:only-child),
+::view-transition-new(.vt-cover):not(:only-child) {
+  animation: none;
+  mix-blend-mode: normal;
+  height: 100%;
+  overflow: clip;
+  object-fit: cover;
+}
+
+/* Whatever is only on one side leaves, or arrives, with the page around it. */
+::view-transition-old(.vt-cover):only-child,
+::view-transition-new(.vt-cover):only-child,
+::view-transition-old(.vt-title):only-child,
+::view-transition-new(.vt-title):only-child {
+  animation-duration: 260ms;
+}
+
+/*
+ * A title, on the other hand, changes size by a factor of three between the grid
+ * and the record page. Stretching type is worse than fading it, so this pair
+ * keeps the default crossfade and only travels.
+ */
+::view-transition-group(.vt-title) {
+  animation-duration: 340ms;
+  animation-timing-function: var(--ease-out);
+}
+
+/* The chrome is the same chrome on the other side, so it should not move. */
+::view-transition-group(site-header),
+::view-transition-group(site-footer) {
+  animation-duration: 200ms;
+}
+
+/*
+ * Reduced motion cuts the animation, not the navigation: the pages still swap,
+ * they just swap instantly. The blanket rule in global.css cannot reach these —
+ * `*` does not match a pseudo-element.
+ */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+.header {
+  view-transition-name: site-header;
+}
+
+.footer {
+  view-transition-name: site-footer;
+}
