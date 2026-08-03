@@ -4,5 +4,31 @@
   "outputDirectory": "dist",
   "framework": "astro",
   "trailingSlash": true,
-  "redirects": [{ "source": "/", "destination": "/ca/", "permanent": true }]
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/es/",
+      "has": [{ "type": "header", "key": "accept-language", "value": "^es(-[A-Za-z0-9]+)*([;,].*)?$" }],
+      "permanent": false
+    },
+    {
+      "source": "/",
+      "destination": "/en/",
+      "has": [{ "type": "header", "key": "accept-language", "value": "^en(-[A-Za-z0-9]+)*([;,].*)?$" }],
+      "permanent": false
+    },
+    {
+      "source": "/",
+      "destination": "/de/",
+      "has": [{ "type": "header", "key": "accept-language", "value": "^de(-[A-Za-z0-9]+)*([;,].*)?$" }],
+      "permanent": false
+    },
+    {
+      "source": "/",
+      "destination": "/fr/",
+      "has": [{ "type": "header", "key": "accept-language", "value": "^fr(-[A-Za-z0-9]+)*([;,].*)?$" }],
+      "permanent": false
+    },
+    { "source": "/", "destination": "/ca/", "permanent": false }
+  ]
 }

@@ -13,7 +13,7 @@ import { chromium } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { readFile } from 'node:fs/promises';
 
-const BASE = process.env.SMOKE_BASE ?? 'http://127.0.0.1:4173/complete-shelf';
+const BASE = process.env.SMOKE_BASE ?? 'http://127.0.0.1:4173';
 const SHOTS = new URL('./__screenshots__/', import.meta.url).pathname;
 const CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 
@@ -282,8 +282,9 @@ for (const path of ['sitemap.xml', 'robots.txt', '404.html', 'og-default.png', '
 // The bare root. Astro will happily overwrite src/pages/index.astro with a bare
 // two-second refresh of its own if `redirectToDefaultLocale` is ever switched
 // back on, and nothing else here would notice: the page it replaces it with is
-// still technically a redirect. Hosts with a server never serve this file at all
-// (Vercel answers with a 308), so this is the GitHub Pages path.
+// still technically a redirect. In production Vercel answers `/` from
+// vercel.json and this file is never reached, so `astro preview` — what this
+// suite runs against — is the only place it can be checked.
 {
   const res = await fetch(`${BASE}/`, { redirect: 'manual' }).catch(() => null);
   const html = (await res?.text().catch(() => '')) ?? '';

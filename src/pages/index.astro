@@ -3,14 +3,13 @@
  * Root entry point. Every page lives under a locale segment, so the bare domain
  * is always a redirect.
  *
- * On a host with a server this file is never reached: Vercel answers `/` with a
- * real 308 to the default locale (see vercel.json), which is both instant and
- * the version that consolidates the root URL's weight onto /ca/. This is the
- * fallback for hosts that cannot redirect at all — GitHub Pages — where it is
- * also the only chance to send a visitor to their own language. It redirects
- * immediately; the markup below is only ever seen if both the meta refresh and
- * JavaScript are unavailable, and then it is a usable list of links rather than
- * a dead end.
+ * In production this file is never reached: Vercel answers `/` at the edge with
+ * a 307 to the visitor's own language, or to /ca/ (see vercel.json). This is the
+ * fallback for anything serving the built artifact without those rules — local
+ * `astro preview`, or a static host — and it negotiates the same way, in the
+ * client. It redirects immediately; the markup below is only ever seen if both
+ * the meta refresh and JavaScript are unavailable, and then it is a usable list
+ * of links rather than a dead end.
  *
  * `astro.config.mjs` has to keep `redirectToDefaultLocale: false` for any of
  * this to ship: with it on, Astro overwrites this page with a bare two-second
