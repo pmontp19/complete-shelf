@@ -388,8 +388,16 @@ export function createLayout(ctx: ShelfContext, deps: LayoutDeps): {
       );
 
       rig.shadowMesh.position.set(px, ctx.shelfTopY - 0.001, z + rig.dims.depth * 0.5 + 0.06);
-      rig.shadowMaterial.opacity = 0.32 * opacity * (1 - hover * 0.45);
-      rig.shadowMesh.visible = opacity > 0.02;
+      // A contact shadow is contact: it only means anything while the volume is
+      // standing on the board. Inspection lifts it off and hides the board
+      // (`ctx.furniture`), so the shadow has to go with the board rather than
+      // stay behind lying in a plane that is no longer there. Left in, it
+      // followed the volume's own forward travel out into open space and read as
+      // a smudge floating beside a book with nothing under it. `inspectBlend` is
+      // the same easing the ledge's own disappearance rides, so the two leave
+      // and come back together.
+      rig.shadowMaterial.opacity = 0.32 * opacity * (1 - hover * 0.45) * ambientMotion;
+      rig.shadowMesh.visible = opacity > 0.02 && ambientMotion > 0.01;
     }
   }
 
