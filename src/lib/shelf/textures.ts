@@ -1,6 +1,35 @@
 import * as THREE from 'three';
 import type { ShelfBook } from './types';
 
+const FALLBACK_SERIF = 'Georgia, "Times New Roman", serif';
+let cachedSerif: string | null = null;
+
+/**
+ * The page's own serif stack, read from the design system's `--font-serif`
+ * rather than restated here.
+ *
+ * A spine sits directly above the caption that names the same book, so if the
+ * two disagree the shelf and the page are set in different faces: this file
+ * used to hardcode Georgia while the page asks for Iowan Old Style first, which
+ * on a Mac put two different serifs a couple of centimetres apart. Reading the
+ * property means the shelf follows the design system instead of drifting from
+ * it. Cached because a spine texture is drawn per volume and each call would
+ * otherwise walk the cascade.
+ *
+ * The project loads no webfonts (every stack is a system one), so there is
+ * nothing to await here: were an `@font-face` ever added, this canvas type
+ * would need `document.fonts.ready` before the textures are drawn.
+ */
+function pageSerif(): string {
+  if (cachedSerif) return cachedSerif;
+  const raw =
+    typeof document === 'undefined'
+      ? ''
+      : getComputedStyle(document.documentElement).getPropertyValue('--font-serif').trim();
+  cachedSerif = raw || FALLBACK_SERIF;
+  return cachedSerif;
+}
+
 /** Small deterministic hash so per-book procedural textures stay stable across reloads. */
 export function hashSeed(value: string): number {
   let hash = 2166136261;
@@ -202,7 +231,7 @@ function drawSpineLine(
   options: SpineLineOptions,
 ): void {
   const { width, height } = ctx.canvas;
-  const font = (size: number) => `${options.weight} ${size}px Georgia, "Times New Roman", serif`;
+  const font = (size: number) => `${options.weight} ${size}px ${pageSerif()}`;
 
   // Text metrics scale linearly with the font size, so one measuring pass at a
   // reference size gives the length per pixel of type and the fit is arithmetic
