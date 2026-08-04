@@ -4,6 +4,13 @@ import { spineArtPlaneSize, type BookDimensions } from './geometry';
 import { createSpineTexture } from './textures';
 
 /**
+ * The cream `createPageEdgeTexture` paints its page block on. Kept here as the
+ * ground the headband thread is woven from, so the trim belongs to the same
+ * paper as the block it is glued to rather than to an unrelated swatch.
+ */
+const PAGE_STOCK = '#e7ddc7';
+
+/**
  * Every material one volume is dressed in. `board`, `boardBack`, `headband`,
  * `frontArt` and `spineArt` are `MeshPhysicalMaterial` so a later unit can add
  * `sheen`/`sheenColor`/`sheenRoughness` (cloth) or `clearcoat` (jacket art)
@@ -60,10 +67,17 @@ export function createBookMaterials(
     sheenRoughness: 0.85,
     transparent: true,
   });
+  // A headband is woven cotton thread, so it is matte and not metallic, and it
+  // is decorative rather than typographic: it picks the binding cloth up
+  // without matching it. `book.textColor` used to be the ground here, but that
+  // is the ink the cover palette chose for legibility over the cloth, so on
+  // most volumes it resolved to near-black and the trim read as a drawn line
+  // rather than as thread. Starting from the page stock and pulling partway
+  // toward the cloth keeps it light on every volume in the run.
   const headband = new THREE.MeshPhysicalMaterial({
-    color: book.textColor,
-    roughness: 0.62,
-    metalness: 0.2,
+    color: new THREE.Color(PAGE_STOCK).lerp(new THREE.Color(book.spineColor), 0.45),
+    roughness: 0.78,
+    metalness: 0,
     transparent: true,
   });
 

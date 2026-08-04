@@ -244,27 +244,36 @@ export function createBookCase(dims: BookDimensions, materials: BookMaterials): 
   meshes.push(spineMesh);
   group.add(spineMesh);
 
-  // 4. Headbands: the woven trim visible where the boards' full height
-  // overhangs the shorter text block, at the head and tail. One geometry,
-  // rotated so its axis runs along X, reused for both positions.
-  const headbandLength = Math.max(0.01, W - squab * 2);
+  // 4. Headbands: the woven cord glued across the head and the tail of the
+  // SPINE, tucked into the shoulder the squab leaves. It spans the thickness
+  // of the text block, not the width of the cover: a real headband is a few
+  // millimetres of trim you glimpse at the spine end when you look down at a
+  // shelved book. Running it the whole way out to the fore-edge (as this once
+  // did) draws a continuous bar across the top of the page block, which is
+  // obvious the moment a volume is turned and seen from above.
+  const headbandLength = Math.max(0.01, textDepth);
   const headbandGeometry = new THREE.CylinderGeometry(
     headbandRadius,
     headbandRadius,
     headbandLength,
     HEADBAND_RADIAL_SEGMENTS,
   );
-  headbandGeometry.rotateZ(Math.PI / 2);
+  // A cylinder is built along Y, so a quarter turn about X lays its axis along
+  // Z, across the thickness, in the channel between the two boards.
+  headbandGeometry.rotateX(Math.PI / 2);
+  // Just clear of the spine band's inner face, resting on the text block the
+  // way the cord rests on the gathered signatures it is glued to.
+  const headbandX = -W / 2 + spineBandWidth + headbandRadius;
   const headTop = new THREE.Mesh(headbandGeometry, materials.headband);
   // Centred at H/2 - squab/2 rather than H/2 - squab (the text block's own
   // top face) so the cylinder's radius (squab/2) spans outward from there to
   // exactly H/2 (the board's top edge): tangent to both, filling the gap
   // instead of half-burying itself in the text block.
-  headTop.position.y = H / 2 - squab / 2;
+  headTop.position.set(headbandX, H / 2 - squab / 2, 0);
   headTop.castShadow = false;
   headTop.receiveShadow = false;
   const headTail = new THREE.Mesh(headbandGeometry, materials.headband);
-  headTail.position.y = -(H / 2 - squab / 2);
+  headTail.position.set(headbandX, -(H / 2 - squab / 2), 0);
   headTail.castShadow = false;
   headTail.receiveShadow = false;
   geometries.push(headbandGeometry);
