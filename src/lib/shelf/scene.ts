@@ -127,6 +127,21 @@ export function createStage(ctx: ShelfContext): Stage {
   rimLight.position.set(0.4, 2.4, -1.6);
   ctx.scene.add(rimLight);
 
+  // Light bouncing off the ledge back up into the volumes. The other four lights
+  // are all directional or hemispherical, so they fall on every volume in the
+  // run equally and the row reads evenly lit, which a real shelf never is. A
+  // short-range point light low and in front, off to one side, is what breaks
+  // that up: it falls off with distance, so it warms the volumes near it and
+  // leaves the far end of the run to the key light. It sits just above the board
+  // and slightly toward the reader, where the wood would actually be catching
+  // the key light and throwing it back. No shadow: a point light casts through a
+  // six-face cube map, which is a lot of shadow passes for a fill light nobody
+  // will look at directly.
+  const bounceLight = new THREE.PointLight(0xd79b72, 1.9, 4.5, 2);
+  bounceLight.position.set(-1.4, 0.22, 1.5);
+  bounceLight.castShadow = false;
+  ctx.scene.add(bounceLight);
+
   // The ledge. A unit-length board scaled on every resize so it always runs
   // clear off both edges of the frame, whatever shape the canvas takes.
   const woodTexture = createWoodGrainTexture();
@@ -177,6 +192,12 @@ export function createStage(ctx: ShelfContext): Stage {
     hemiLight.groundColor.copy(palette.hemiGround);
     keyLight.color.copy(palette.key);
     rimLight.color.copy(palette.rim);
+    // Derived from the palette rather than given a field of its own, because a
+    // bounce is not an independent colour: it is the surface's colour
+    // (`hemiGround` is already the paper darkened and pulled toward the selected
+    // cover) carrying whatever the key light is warming it with. Deriving it
+    // here keeps the per-cover tint the one source for every light in the rig.
+    bounceLight.color.copy(palette.hemiGround).lerp(palette.key, 0.35);
   }
 
   const browseCamera = { position: new THREE.Vector3(), target: cameraTarget.clone() };
