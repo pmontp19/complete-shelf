@@ -57,6 +57,12 @@ export function createJacketSheenMaterial(): THREE.ShaderMaterial {
     // instead of being cut off square by the end of the plane. Broader than a
     // travelling sweep would want: this one can come to rest, and a narrow band
     // sitting still reads as a drawn stripe rather than as a reflection.
+    //
+    // The alpha ceiling is deliberately low. A varnish highlight is a slight lift
+    // in the paper's own value, not a light source: at anything brighter it stops
+    // being a property of the surface and starts competing with the cover art it
+    // is supposed to be sitting on. It should be the kind of thing a reader
+    // notices because it moved, not because it is bright.
     fragmentShader: `
       varying vec2 vUv;
       uniform float uOffset;
@@ -67,7 +73,7 @@ export function createJacketSheenMaterial(): THREE.ShaderMaterial {
         float travel = fract(vUv.x * 0.72 + vUv.y * 0.31 + uOffset);
         float band = smoothstep(0.34, 0.5, travel) * (1.0 - smoothstep(0.5, 0.66, travel));
         float falloff = smoothstep(0.0, 0.18, vUv.x) * smoothstep(1.0, 0.82, vUv.x);
-        gl_FragColor = vec4(uColor, band * falloff * uStrength * 0.42);
+        gl_FragColor = vec4(uColor, band * falloff * uStrength * 0.18);
       }
     `,
   });
