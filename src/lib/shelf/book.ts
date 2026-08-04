@@ -20,8 +20,8 @@ const MAX_LEAN = 0.035;
  */
 export interface HardcoverRig extends BookRig {
   setInteriorVisible(visible: boolean): void;
-  /** Drives the jacket's varnish highlight: strength 0..1, elapsed in seconds. */
-  setSheen(strength: number, elapsed: number): void;
+  /** Drives the jacket's varnish highlight: strength 0..1, band offset in turns. */
+  setSheen(strength: number, offset: number): void;
 }
 
 /** Assembles one volume: its case, materials, contact shadow and idle pose. */
@@ -137,15 +137,16 @@ export function buildBookRig(args: {
    * Drives the varnish highlight. `strength` 0 hides the plane outright rather
    * than drawing a fully transparent one, which is what keeps the 21 volumes
    * that are racked spine-out at any moment from each costing an additive pass
-   * for a highlight nobody can see. `elapsed` is wall-clock seconds, so the
-   * sweep's speed does not depend on the frame rate.
+   * for a highlight nobody can see. `offset` places the band, and the layout
+   * derives it from the pointer and the volume's own turn rather than from a
+   * clock, so the highlight reads as a reflection and not as an animation.
    */
-  function setSheen(strength: number, elapsed: number): void {
+  function setSheen(strength: number, offset: number): void {
     const visible = strength > 0.001;
     bookCase.sheenMesh.visible = visible;
     if (!visible) return;
     materials.jacketSheen.uniforms.uStrength.value = strength;
-    materials.jacketSheen.uniforms.uTime.value = elapsed;
+    materials.jacketSheen.uniforms.uOffset.value = offset;
   }
 
   return {

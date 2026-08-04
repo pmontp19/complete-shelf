@@ -19,18 +19,21 @@ const PAGE_STOCK = '#e7ddc7';
 const SHEEN_HIGHLIGHT = 0xfff1d8;
 
 /**
- * An additive sweep of light travelling slowly across a jacket: the highlight
- * that crosses a varnished cover as it turns under a lamp. The jacket already
- * carries `clearcoat`, which is the varnish as a material property; this is what
- * that varnish does when the light moves.
+ * The highlight a varnished jacket throws back. The jacket already carries
+ * `clearcoat`, which is the varnish as a material property; this is where that
+ * varnish catches the light.
  *
- * Additive and `depthWrite: false`, because it is light added to whatever is
- * drawn there rather than a surface of its own: it must never occlude the artwork
+ * `uOffset` places the band, and the layout derives it from things the reader is
+ * doing: where the pointer is across the stage, and how far the volume has turned
+ * out of the run. So the highlight behaves like a reflection, holding still while
+ * nothing moves and sweeping when the volume or the viewpoint does. It is
+ * deliberately NOT a function of the clock. An earlier version drove it from
+ * elapsed time, which made it an animation that simply happened on its own, with
+ * no relationship to anything the reader was doing.
+ *
+ * Additive and `depthWrite: false`, because it is light added to whatever is drawn
+ * there rather than a surface of its own: it must never occlude the artwork
  * beneath it or take part in depth sorting.
- *
- * `uStrength` is driven per frame by the layout, which is also what keeps this
- * off under `prefers-reduced-motion` (the strength simply stays at 0) and what
- * fades it out along with its volume at the far end of the run.
  */
 export function createJacketSheenMaterial(): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
@@ -38,7 +41,7 @@ export function createJacketSheenMaterial(): THREE.ShaderMaterial {
     depthWrite: false,
     blending: THREE.AdditiveBlending,
     uniforms: {
-      uTime: { value: 0 },
+      uOffset: { value: 0 },
       uStrength: { value: 0 },
       uColor: { value: new THREE.Color(SHEEN_HIGHLIGHT) },
     },
@@ -49,20 +52,22 @@ export function createJacketSheenMaterial(): THREE.ShaderMaterial {
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }
     `,
-    // One narrow diagonal band with eased edges, so it has no hard boundary,
-    // multiplied by a horizontal falloff so the sweep dies out before it reaches
-    // the jacket's edge instead of being cut off square by the end of the plane.
+    // One broad diagonal band with eased edges, so it has no hard boundary,
+    // multiplied by a horizontal falloff so it dies out before the jacket's edge
+    // instead of being cut off square by the end of the plane. Broader than a
+    // travelling sweep would want: this one can come to rest, and a narrow band
+    // sitting still reads as a drawn stripe rather than as a reflection.
     fragmentShader: `
       varying vec2 vUv;
-      uniform float uTime;
+      uniform float uOffset;
       uniform float uStrength;
       uniform vec3 uColor;
 
       void main() {
-        float travel = fract(vUv.x * 0.72 + vUv.y * 0.31 + uTime * 0.045);
-        float band = smoothstep(0.44, 0.5, travel) * (1.0 - smoothstep(0.5, 0.57, travel));
+        float travel = fract(vUv.x * 0.72 + vUv.y * 0.31 + uOffset);
+        float band = smoothstep(0.34, 0.5, travel) * (1.0 - smoothstep(0.5, 0.66, travel));
         float falloff = smoothstep(0.0, 0.18, vUv.x) * smoothstep(1.0, 0.82, vUv.x);
-        gl_FragColor = vec4(uColor, band * falloff * uStrength * 0.32);
+        gl_FragColor = vec4(uColor, band * falloff * uStrength * 0.42);
       }
     `,
   });
