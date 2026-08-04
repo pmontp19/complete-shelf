@@ -36,6 +36,13 @@ export interface Dictionary {
     loading: string;
     webglUnsupported: string;
     listFallback: string;
+    /** Accessible name of the control that enters inspect mode. */
+    inspect: string;
+    /** Accessible name of the control that leaves inspect mode. */
+    exitInspect: string;
+    orbitHint: string;
+    zoomHint: string;
+    resetView: string;
   };
   works: {
     title: string;
@@ -145,6 +152,11 @@ const ca: Dictionary = {
     webglUnsupported:
       'El teu navegador no pot mostrar la prestatgeria en 3D. Tot seguit tens el catàleg complet.',
     listFallback: 'Catàleg de traduccions',
+    inspect: 'Inspecciona el volum',
+    exitInspect: 'Torna a la prestatgeria',
+    orbitHint: 'Arrossega per girar-lo.',
+    zoomHint: 'Desplaça per fer-hi zoom.',
+    resetView: 'Restableix la vista',
   },
   works: {
     title: 'Traduccions',
@@ -298,6 +310,11 @@ const es: Dictionary = {
     webglUnsupported:
       'Tu navegador no puede mostrar la estantería en 3D. A continuación tienes el catálogo completo.',
     listFallback: 'Catálogo de traducciones',
+    inspect: 'Inspeccionar el volumen',
+    exitInspect: 'Volver a la estantería',
+    orbitHint: 'Arrastra para girarlo.',
+    zoomHint: 'Desplaza para hacer zoom.',
+    resetView: 'Restablecer la vista',
   },
   works: {
     title: 'Traducciones',
@@ -451,6 +468,11 @@ const en: Dictionary = {
     webglUnsupported:
       'Your browser cannot display the 3D shelf. The full catalogue is listed below.',
     listFallback: 'Catalogue of translations',
+    inspect: 'Inspect the volume',
+    exitInspect: 'Back to the shelf',
+    orbitHint: 'Drag to rotate it.',
+    zoomHint: 'Scroll to zoom.',
+    resetView: 'Reset the view',
   },
   works: {
     title: 'Translations',
@@ -604,6 +626,11 @@ const de: Dictionary = {
     webglUnsupported:
       'Ihr Browser kann das 3D-Regal nicht darstellen. Der vollständige Katalog folgt unten.',
     listFallback: 'Katalog der Übersetzungen',
+    inspect: 'Band genauer betrachten',
+    exitInspect: 'Zurück zum Regal',
+    orbitHint: 'Ziehen Sie, um ihn zu drehen.',
+    zoomHint: 'Scrollen Sie, um zu zoomen.',
+    resetView: 'Ansicht zurücksetzen',
   },
   works: {
     title: 'Übersetzungen',
@@ -758,6 +785,11 @@ const fr: Dictionary = {
     webglUnsupported:
       'Votre navigateur ne peut pas afficher l’étagère en 3D. Le catalogue complet est présenté ci-dessous.',
     listFallback: 'Catalogue des traductions',
+    inspect: 'Inspecter le volume',
+    exitInspect: 'Retour à l’étagère',
+    orbitHint: 'Faites glisser pour le faire pivoter.',
+    zoomHint: 'Faites défiler pour zoomer.',
+    resetView: 'Réinitialiser la vue',
   },
   works: {
     title: 'Traductions',

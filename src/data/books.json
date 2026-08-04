@@ -11,6 +11,7 @@
     "year": 2026,
     "isbn": "9788466435611",
     "pageCount": 424,
+    "trimHeightMm": 230,
     "category": "ya",
     "synopsis": {
       "ca": "En Donovan és un dels xofers més populars de Campus Drivers i un trencacors sense remei, fins que s'adona del mal que ha fet i decideix convertir-se en el xicot perfecte. Per aconseguir-ho necessita l'ajuda de la Carrie, l'experta en novel·les romàntiques del campus, que no vol saber-ne res. Decidit a conquerir-la, es sotmet a un veritable entrenament sentimental, molt més complicat que en els llibres que ella devora.",
@@ -35,6 +36,7 @@
     "year": 2026,
     "isbn": "9788466435321",
     "pageCount": 656,
+    "trimHeightMm": 230,
     "category": "fiction",
     "coTranslators": [
       "Marc Barrobés",
@@ -65,6 +67,7 @@
     "year": 2026,
     "isbn": "9788466435246",
     "pageCount": 464,
+    "trimHeightMm": 230,
     "category": "ya",
     "synopsis": {
       "ca": "En Lane O'Neill i els seus amics porten un negoci en expansió: Campus Drivers, un servei de xofers per a estudiants. A Lane li encanten els avantatges, però mai s'enganxa a ningú, fins que la seva veïna trenca amb la seva xicota, la Lois Hogan, i ell acaba allotjant-la al seu pis. Conviure sota el mateix sostre posarà a prova totes les seves regles.",
@@ -89,6 +92,7 @@
     "year": 2026,
     "isbn": "9788466434430",
     "pageCount": 592,
+    "trimHeightMm": 230,
     "category": "fiction",
     "coTranslators": [
       "Cristina Sala Pujol"
@@ -116,6 +120,7 @@
     "year": 2025,
     "isbn": "9788466433792",
     "pageCount": 720,
+    "trimHeightMm": 230,
     "category": "fiction",
     "coTranslators": [
       "Cristina Sala Pujol"
@@ -143,6 +148,7 @@
     "year": 2025,
     "isbn": "9788466432979",
     "pageCount": 560,
+    "trimHeightMm": 230,
     "category": "fiction",
     "coTranslators": [
       "Esther Roig Giménez",
@@ -171,6 +177,7 @@
     "year": 2024,
     "isbn": "9788466432153",
     "pageCount": 864,
+    "trimHeightMm": 230,
     "category": "fiction",
     "synopsis": {
       "ca": "En Ridley Kane treballa per a la CIA als llocs més perillosos del món, traient-ne agents que tothom ha donat per perduts. Una missió de rutina a la frontera entre l'Afganistan i l'Iran es converteix en una trampa quan descobreix que un líder terrorista donat per mort continua viu i prepara un atemptat devastador contra els Estats Units.",
@@ -195,6 +202,7 @@
     "year": 2024,
     "isbn": "9788466431507",
     "pageCount": 656,
+    "trimHeightMm": 230,
     "category": "fiction",
     "synopsis": {
       "ca": "A la Virgínia de la postsegregació, la Grace creix consentida per la seva àvia, però en morir-se aquesta l'envien a Brooklyn a viure amb la tia Hattie, entre tes elegants i balls de debutants. Embarassada d'en Dale, fill d'una família benestant, la Hattie l'obliga a amagar-se i la nena acaba donada en adopció sense el seu consentiment. Tres generacions de dones negres quedaran unides per aquest secret.",
@@ -219,6 +227,7 @@
     "year": 2023,
     "isbn": "9788466430258",
     "pageCount": 240,
+    "trimHeightMm": 230,
     "category": "nonfiction",
     "synopsis": {
       "ca": "Dotze casos reals de les pàgines més fosques de la crònica negra espanyola, narrats amb noves entrevistes, documents i testimonis recollits per l'equip de l'exitós podcast Dossier negre. Des de criminals tan coneguts com el Vaquilla fins a assassins i estafadors menys populars, el llibre va més enllà dels titulars per reconstruir què va passar realment, i per què.",
@@ -243,6 +252,7 @@
     "year": 2022,
     "isbn": "9788429780666",
     "pageCount": 608,
+    "trimHeightMm": 230,
     "category": "fiction",
     "coTranslators": [
       "Laura Segarra Vidal"
@@ -270,6 +280,7 @@
     "year": 2022,
     "isbn": "9788466429818",
     "pageCount": 368,
+    "trimHeightMm": 230,
     "category": "memoir",
     "synopsis": {
       "ca": "En Matthew Perry, estimat pel seu paper de Chandler Bing a Friends, explica la història que s'amaga darrere de les rialles: dècades d'addicció, crisis de salut que gairebé li costen la vida i la lluita constant per mantenir-se sobri. Sincer i sovint divertit fins i tot en els moments més foscos, el llibre recorre el seu camí des del Canadà fins a la fama mundial.",
@@ -295,6 +306,7 @@
     "year": 2022,
     "isbn": "9788466429757",
     "pageCount": 312,
+    "trimHeightMm": 246,
     "category": "cookbook",
     "coTranslators": [
       "Queralt Vila Vergés"
@@ -322,6 +334,7 @@
     "year": 2022,
     "isbn": "9788466429092",
     "pageCount": 480,
+    "trimHeightMm": 230,
     "category": "memoir",
     "coTranslators": [
       "Cristina Sala Pujol"
@@ -349,6 +362,7 @@
     "year": 2021,
     "isbn": "9788466428095",
     "pageCount": 912,
+    "trimHeightMm": 230,
     "category": "ya",
     "coTranslators": [
       "Esther Roig Giménez"
@@ -376,6 +390,7 @@
     "year": 2021,
     "isbn": "9788466428064",
     "pageCount": 352,
+    "trimHeightMm": 230,
     "category": "fiction",
     "synopsis": {
       "ca": "L'Amanda i en Clay han llogat una casa de luxe a Long Island per passar uns dies en família amb els seus dos fills. Una nit, els propietaris, una parella negra de més edat, apareixen a la porta dient que un tall de llum ha deixat Nova York a les fosques i que necessiten refugi. Fora, s'acumulen senyals cada cop més estranys de catàstrofe.",
@@ -400,6 +415,7 @@
     "year": 2021,
     "isbn": "9788466427593",
     "pageCount": 800,
+    "trimHeightMm": 230,
     "category": "ya",
     "coTranslators": [
       "Esther Roig Giménez"
@@ -427,6 +443,7 @@
     "year": 2020,
     "isbn": "9788466427289",
     "pageCount": 336,
+    "trimHeightMm": 200,
     "category": "fiction",
     "coTranslators": [
       "Alba Dedeu"
@@ -454,6 +471,7 @@
     "year": 2020,
     "isbn": "9788466426855",
     "pageCount": 368,
+    "trimHeightMm": 230,
     "category": "fiction",
     "synopsis": {
       "ca": "Abans de la guerra, en Nuri criava abelles als afores d'Alep mentre la seva dona, l'Afra, pintava. La guerra els arrabassa la llar, el fill i la vista de l'Afra, i els obliga a emprendre una ruta esgarrifosa per Turquia i Grècia cap a Anglaterra, on els espera un cosí d'en Nuri. La novel·la segueix un matrimoni posat a prova pel dol i l'esperança de començar de nou.",
@@ -478,6 +496,7 @@
     "year": 2020,
     "isbn": "9788466427159",
     "pageCount": 656,
+    "trimHeightMm": 230,
     "category": "ya",
     "coTranslators": [
       "Esther Roig Giménez"
@@ -505,6 +524,7 @@
     "year": 2020,
     "isbn": "9788466426459",
     "pageCount": 720,
+    "trimHeightMm": 230,
     "category": "cookbook",
     "coTranslators": [
       "Núria Parés Sellarès",
@@ -533,6 +553,7 @@
     "year": 2019,
     "isbn": "9788466425896",
     "pageCount": 368,
+    "trimHeightMm": 230,
     "category": "fiction",
     "synopsis": {
       "ca": "Set anys després de la mort del seu marit, en Gerry, la Holly ha aconseguit refer la seva vida, fins que un grup que s'anomena el Club PD T'estimo es posa en contacte amb ella. Inspirats per les cartes que va deixar en Gerry, els membres volen l'ajuda de la Holly per escriure les seves últimes paraules als estimats. Haurà de decidir què significa continuar endavant.",
@@ -557,6 +578,7 @@
     "year": 2019,
     "isbn": "9788466424912",
     "pageCount": 432,
+    "trimHeightMm": 230,
     "category": "fiction",
     "synopsis": {
       "ca": "Frankfurt, 1963. L'Eva Bruhns, una jove traductora d'una família que porta un restaurant tradicional alemany, rep l'encàrrec d'interpretar testimonis en polonès per a un judici imminent. En contra de la voluntat de la seva família, accepta la feina sense saber que es tracta del primer procés per Auschwitz celebrat a Alemanya. Mentre escolta els supervivents descriure el camp, l'Eva es veu obligada a encarar un passat que voldrien oblidar.",

@@ -3,6 +3,7 @@ import { type Locale } from '~/i18n/config';
 import { useTranslations, interpolate } from '~/i18n/ui';
 import { ALL_BOOKS, toShelfBooks, paletteFor, thumbFor } from '~/data/books';
 import { bookPath } from '~/i18n/paths';
+import type { ShelfLabels } from '~/lib/shelf/types';
 
 interface Props {
   locale: Locale;
@@ -28,18 +29,29 @@ const captions = ALL_BOOKS.map((book) => ({
 const first = captions[0];
 const total = captions.length;
 
+// Typed against the engine's own contract (not just this object's inferred
+// shape), so a locale missing a key `ShelfLabels` requires is a build error
+// here rather than an `undefined` the client-side `JSON.parse` cast below
+// would otherwise wave through silently.
+const labels: ShelfLabels = {
+  region: t.shelf.region,
+  previous: t.shelf.previous,
+  next: t.shelf.next,
+  open: t.shelf.open,
+  selected: t.shelf.selected,
+  loading: t.shelf.loading,
+  webglUnsupported: t.shelf.webglUnsupported,
+  inspect: t.shelf.inspect,
+  exitInspect: t.shelf.exitInspect,
+  orbitHint: t.shelf.orbitHint,
+  zoomHint: t.shelf.zoomHint,
+  resetView: t.shelf.resetView,
+};
+
 const payload = {
   books: shelfBooks,
   captions,
-  labels: {
-    region: t.shelf.region,
-    previous: t.shelf.previous,
-    next: t.shelf.next,
-    open: t.shelf.open,
-    selected: t.shelf.selected,
-    loading: t.shelf.loading,
-    webglUnsupported: t.shelf.webglUnsupported,
-  },
+  labels,
 };
 
 const pad = (value: number) => String(value).padStart(2, '0');
@@ -50,9 +62,9 @@ const stepperClass =
   'grid size-9 flex-none place-content-center rounded-full border border-rule bg-transparent p-0 text-ink-soft transition-colors duration-[180ms] ease-brand hover:border-ink-faint hover:bg-paper-raised hover:text-ink active:bg-paper-sunk';
 ---
 
-<section class="group block" data-shelf-root>
+<section class="group block" data-shelf-root data-mode="browse">
   <div
-    class="shelf__stage relative hidden h-[clamp(21rem,56vh,38rem)] overflow-hidden bg-[radial-gradient(120%_76%_at_50%_92%,color-mix(in_srgb,var(--tint)_22%,transparent),transparent_66%),linear-gradient(180deg,var(--color-paper)_8%,color-mix(in_srgb,var(--tint)_7%,var(--color-paper))_58%,var(--color-paper)_100%)] transition-[background] duration-700 ease-brand group-data-[mounted=true]:block max-md:h-[clamp(16rem,44vh,23rem)]"
+    class="shelf__stage relative hidden h-[min(clamp(24rem,62vh,42rem),70vh)] overflow-hidden bg-[radial-gradient(120%_76%_at_50%_92%,color-mix(in_srgb,var(--tint)_22%,transparent),transparent_66%),linear-gradient(180deg,var(--color-paper)_8%,color-mix(in_srgb,var(--tint)_7%,var(--color-paper))_58%,var(--color-paper)_100%)] transition-[background] duration-700 ease-brand group-data-[mounted=true]:block max-md:h-[min(clamp(20rem,52vh,28rem),70vh)]"
   >
     <div
       class="absolute inset-0 opacity-0 transition-opacity duration-900 ease-brand group-data-[ready=true]:opacity-100"
@@ -65,12 +77,42 @@ const stepperClass =
     >
       {t.shelf.loading}
     </p>
+
+    {/* Inspect-mode chrome: state lives entirely on [data-shelf-root]'s
+        data-mode, written by the engine's onMode callback below. These two
+        nodes are `inert` in the markup (safe by default, before any script
+        runs) and the inline script only ever flips that attribute in step
+        with the mode, so neither is a keyboard or pointer target while
+        browsing. global.css drives the fade purely off data-mode, on
+        transform/opacity only, so none of this touches the stage's box. */}
+    <button
+      type="button"
+      data-shelf-inspect-exit
+      inert
+      aria-label={t.shelf.exitInspect}
+      class="absolute top-[clamp(0.75rem,3vw,1.5rem)] right-[clamp(0.75rem,3vw,1.5rem)] z-10 grid size-9 flex-none place-content-center rounded-full border border-rule bg-paper/85 text-ink-soft backdrop-blur-sm hover:border-ink-faint hover:bg-paper-raised hover:text-ink active:bg-paper-sunk"
+    >
+      <svg class="size-4" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+      </svg>
+    </button>
+
+    <div
+      data-shelf-inspect-hints
+      inert
+      class="pointer-events-none absolute inset-x-0 bottom-[clamp(0.75rem,3vw,1.5rem)] z-10 flex flex-wrap items-center justify-center gap-x-[clamp(1rem,3vw,2rem)] gap-y-1 px-4 text-center font-sans text-[0.68rem] tracking-[0.1em] text-ink-faint uppercase"
+    >
+      <span>{t.shelf.orbitHint}</span>
+      <span class="opacity-50" aria-hidden="true">·</span>
+      <span>{t.shelf.zoomHint}</span>
+    </div>
   </div>
 
   {/* The instrument panel: a hairline rule carrying the position of the
       carriage, its two controls, and the running count. */}
   <div
     class="shell hidden items-center gap-[clamp(0.75rem,2vw,1.5rem)] border-y border-rule py-[0.85rem] group-data-[mounted=true]:flex"
+    data-shelf-controls
   >
     <button class={stepperClass} type="button" data-shelf-prev aria-label={t.shelf.previous}>
       <svg class="size-4" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -192,7 +234,7 @@ const stepperClass =
 
 <script>
   import { mountShelf } from '~/lib/shelf/shelf';
-  import type { ShelfOptions } from '~/lib/shelf/types';
+  import type { ShelfMode, ShelfOptions } from '~/lib/shelf/types';
 
   interface Caption {
     id: string;
@@ -227,9 +269,51 @@ const stepperClass =
     const loadingEl = pick<HTMLElement>('[data-shelf-loading]');
     const previousButton = pick<HTMLButtonElement>('[data-shelf-prev]');
     const nextButton = pick<HTMLButtonElement>('[data-shelf-next]');
+    const exitButton = pick<HTMLButtonElement>('[data-shelf-inspect-exit]');
+    const hintsEl = pick<HTMLElement>('[data-shelf-inspect-hints]');
+    const controlsEl = pick<HTMLElement>('[data-shelf-controls]');
 
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
     const pad = (value: number) => String(value).padStart(2, '0');
+
+    // The engine is the only thing allowed to decide the mode; this just
+    // mirrors it onto the DOM as `data-mode` (global.css does the fading) and
+    // keeps the inspect-only and browse-only chrome out of the tab order
+    // and off the accessibility tree while it does not apply. `focusing` is
+    // grouped with `inspect` (and `returning` with `browse`) so the chrome
+    // starts moving in step with the camera instead of snapping in only
+    // once it has already arrived.
+    const applyMode = (mode: ShelfMode) => {
+      const inspecting = mode === 'focusing' || mode === 'inspect';
+
+      // `inert` blurs a focused descendant to <body> the instant its
+      // ancestor gains the attribute, so the only reliable moment to ask
+      // "does the control about to go inert hold focus" is before that
+      // toggle runs. `.contains()`, not an identity check, because the
+      // hints block and the controls bar are containers with focusable
+      // descendants rather than focusable themselves.
+      const focusLeavesControls = inspecting && !!controlsEl?.contains(document.activeElement);
+      const focusLeavesInspectChrome =
+        !inspecting &&
+        (!!exitButton?.contains(document.activeElement) || !!hintsEl?.contains(document.activeElement));
+
+      root.dataset.mode = mode;
+      exitButton?.toggleAttribute('inert', !inspecting);
+      hintsEl?.toggleAttribute('inert', !inspecting);
+      controlsEl?.toggleAttribute('inert', inspecting);
+
+      // Only move focus when it would otherwise be stranded on <body>: an
+      // unrequested focus jump is a bug of its own. `preventScroll` matches
+      // the rule that entering or leaving inspect must never touch scroll
+      // position. The engine's own focusable region (guarded, since the
+      // fallback path never creates one) is where a reader who just left
+      // inspect can carry on browsing with the arrow keys.
+      if (focusLeavesControls) {
+        exitButton?.focus({ preventScroll: true });
+      } else if (focusLeavesInspectChrome) {
+        root.querySelector<HTMLElement>('.shelf3d-region')?.focus({ preventScroll: true });
+      }
+    };
 
     let shown = -1;
     const showCaption = (index: number) => {
@@ -283,12 +367,16 @@ const stepperClass =
       onActivate(book) {
         window.location.href = book.href;
       },
+      onMode(mode) {
+        applyMode(mode);
+      },
     })
       .then((shelf) => {
         root.dataset.mounted = 'true';
         loadingEl?.remove();
         previousButton?.addEventListener('click', () => shelf.previous());
         nextButton?.addEventListener('click', () => shelf.next());
+        exitButton?.addEventListener('click', () => shelf.returnToShelf());
       })
       .catch((error) => {
         // Leave the HTML fallback in place; it is a complete experience.

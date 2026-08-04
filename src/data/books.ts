@@ -20,6 +20,17 @@ export interface BookRecord {
   year: number;
   isbn: string;
   pageCount?: number;
+  /**
+   * Real printed trim height in millimetres, filled in only where the
+   * edition's own retailer listing (linked in `sources`) states it: checking
+   * those pages shows Grup 62 binds almost its entire backlist at one
+   * identical 230 x 150mm trim regardless of genre or extent, so 230 here is
+   * a verified fact for most of these 22, not a rounded-off guess. Left unset
+   * for an edition nobody has looked up yet; `computeBookDimensions` in
+   * `geometry.ts` then falls back to a flat default height instead of
+   * deriving one from a trim ratio, same as it always did.
+   */
+  trimHeightMm?: number;
   category: Category;
   coTranslators?: string[];
   /**
@@ -89,6 +100,61 @@ export function paletteFor(id: string): { spineColor: string; textColor: string 
 export function dimensionsFor(id: string): { width: number; height: number } {
   const meta = coverMeta.get(id) ?? FALLBACK_COVER_META;
   return { width: meta.width, height: meta.height };
+}
+
+/** A typical B-format novel jacket, used when a cover has no measured size at all. */
+const DEFAULT_COVER_ASPECT = 1.5;
+/**
+ * A cover ratio outside this band did not come from a real trim: it came from
+ * a scan that got cropped badly before it ever reached `cover-meta.json`. The
+ * clamp keeps one bad crop from rendering as a volume shaped like a bookmark
+ * or a tabloid, without touching the (many, legitimate) real ratios in between.
+ */
+const MIN_COVER_ASPECT = 1.2;
+const MAX_COVER_ASPECT = 1.9;
+
+/** The real cover's height / width, from the pixel dimensions of the actual scan. */
+function coverAspectFor(id: string): number {
+  const { width, height } = dimensionsFor(id);
+  if (!width || !height) return DEFAULT_COVER_ASPECT;
+  const aspect = height / width;
+  return Math.min(MAX_COVER_ASPECT, Math.max(MIN_COVER_ASPECT, aspect));
+}
+
+/**
+ * No two physical copies of the same edition stand exactly as tall as one
+ * another: binding tolerance and cover warp put real, small copy-to-copy
+ * variation into any print run. That is a property of a given copy, not a
+ * fact about the edition, so it has no business in `books.json` (it would
+ * misrepresent a verified `trimHeightMm` as more precise than it is, or worse,
+ * invent one). It is generated here, at render-data time, seeded off the book
+ * id so the same volume gets the same jitter on every reload rather than
+ * flickering between builds. Bounded to +/-1.5mm: a real binding tolerance,
+ * not a lever for chasing more shelf variety than the verified data supports.
+ */
+const BINDING_TOLERANCE_MM = 1.5;
+
+/**
+ * A guard on hand-maintained data, not a design lever: a stray typo in
+ * `books.json` (2300 instead of 230, or a dropped minus sign) would otherwise
+ * flow straight through as a world-space height. Real printed trims, from a
+ * pocket paperback to an oversized art book, sit comfortably inside this
+ * band, so nothing legitimate should ever hit the clamp.
+ */
+const MIN_TRIM_HEIGHT_MM = 100;
+const MAX_TRIM_HEIGHT_MM = 400;
+
+function bindingJitterMm(id: string): number {
+  // FNV-1a: a small, dependency-free hash that is stable for a given id and
+  // spreads similar ids (e.g. "furia" vs "furiosa") to unrelated outputs.
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < id.length; i++) {
+    hash ^= id.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  // Unsigned 32-bit -> [0, 1) -> [-1, 1) -> the tolerance band.
+  const unit = (hash >>> 0) / 4294967296;
+  return (unit * 2 - 1) * BINDING_TOLERANCE_MM;
 }
 
 /**
@@ -164,6 +230,14 @@ export function toShelfBooks(locale: Locale, labels: { languages: Record<string,
       spineColor: palette.spineColor,
       textColor: palette.textColor,
       pageCount: book.pageCount ?? 280,
+      trimHeightMm:
+        book.trimHeightMm === undefined
+          ? undefined
+          : Math.min(
+              MAX_TRIM_HEIGHT_MM,
+              Math.max(MIN_TRIM_HEIGHT_MM, book.trimHeightMm + bindingJitterMm(book.id)),
+            ),
+      aspect: coverAspectFor(book.id),
       href: bookPath(locale, book.id),
     };
   });
