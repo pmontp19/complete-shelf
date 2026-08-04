@@ -15,6 +15,58 @@ const TURN_DELAY = 0.3;
 // Also read by scene.ts's camera framing, as part of the worst-case forward
 // pop a selected volume needs room for.
 export const SELECTED_LIFT_Z = 0.24;
+/**
+ * How far past its resting depth a volume swings on its way to the centre,
+ * before settling back onto it.
+ *
+ * A hand pulling a book off a shelf does not stop it dead at the front: it comes
+ * out a little too far and eases back. The Stripe Press reference gets the same
+ * character from its "rotation lane", a staging depth that sits forward of where
+ * the book finally rests, and that overshoot is most of what makes its handoff
+ * read as physical rather than as an interpolation. This is the cheap half of
+ * that idea, and unlike the reference's it is a pure function of carriage
+ * position, so it stays scrubbable and reverses when the reader reverses.
+ *
+ * Kept small on purpose: enough to feel sprung, not enough to push the volume
+ * over the front edge of the ledge it is standing on.
+ */
+export const SELECTED_LIFT_OVERSHOOT_Z = 0.09;
+
+/**
+ * The forward travel of a volume at a given focus, in world units.
+ *
+ * `focus * SELECTED_LIFT_Z` alone is monotonic: the volume slides straight out
+ * and stops, which is what made the approach read as a value being interpolated
+ * rather than as a book being taken off a shelf. The second term is a bump that
+ * rises and falls across the approach, peaking where `f * f * (1 - f) * 6.75`
+ * reaches exactly 1 (at `focus` 2/3), so the volume swings past its resting depth
+ * and then eases back onto it as it finishes centring.
+ *
+ * The overshoot has to be large enough to actually beat the linear term's own
+ * climb, or the sum is still monotonic and nothing springs: below about 0.057 the
+ * maximum is just the endpoint. At 0.09 the profile peaks around `focus` 0.83 at
+ * roughly 0.27, so a volume comes about 0.03 too far forward (an eighth of its
+ * travel) before settling. That also has to stay inside the ledge it stands on:
+ * 0.27 plus half the thickest volume is 0.35, against a board front edge at 0.36.
+ */
+export function liftProfileZ(focus: number): number {
+  const bump = focus * focus * (1 - focus) * 6.75;
+  return focus * SELECTED_LIFT_Z + bump * SELECTED_LIFT_OVERSHOOT_Z;
+}
+
+/**
+ * The furthest forward a browsing volume can ever be, which is what `scene.ts`
+ * frames the camera against so the peak of the swing cannot clip the top edge.
+ *
+ * Sampled rather than solved. The maximum of the profile above moves as either
+ * constant is tuned, and a hand-derived closed form would quietly stop being the
+ * real maximum the first time somebody changed one of them.
+ */
+export const SELECTED_LIFT_Z_PEAK = (() => {
+  let peak = 0;
+  for (let i = 0; i <= 200; i += 1) peak = Math.max(peak, liftProfileZ(i / 200));
+  return peak;
+})();
 // Also used, at construction time, for the worst-case `spread` a fully
 // turned-out cover needs, see shelf.ts, and by scene.ts's camera framing, as
 // the worst-case scale-up a selected volume needs room for.
@@ -257,7 +309,7 @@ export function createLayout(ctx: ShelfContext, deps: LayoutDeps): {
 
       let px = x;
       let y = ctx.shelfTopY + rig.dims.height / 2 + focus * FOCUS_RISE_Y + hover * HOVER_LIFT;
-      let z = focus * SELECTED_LIFT_Z + hover * HOVER_LIFT;
+      let z = liftProfileZ(focus) + hover * HOVER_LIFT;
 
       if (isInspected && pose) {
         px += pose.x;

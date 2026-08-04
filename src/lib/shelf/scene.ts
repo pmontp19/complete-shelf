@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { ShelfContext, ThemePalette } from './types';
 import { createWoodGrainTexture } from './textures';
-import { FOCUS_RISE_Y, HOVER_LIFT, SELECTED_LIFT_Z, SELECTED_SCALE } from './layout';
+import { FOCUS_RISE_Y, HOVER_LIFT, SELECTED_LIFT_Z_PEAK, SELECTED_SCALE } from './layout';
 
 // Camera framing — recomputed on every resize so the composition (roughly
 // this many book-slots visible across the frame, selected book fully
@@ -232,15 +232,18 @@ export function createStage(ctx: ShelfContext): Stage {
     // for the selected state and for the small extra rise a focused, hovered
     // volume gets along Y (FOCUS_RISE_Y, HOVER_LIFT — see layout.ts).
     const selectedHalfHeight = (ctx.maxHeight / 2) * SELECTED_SCALE + FOCUS_RISE_Y + HOVER_LIFT;
-    // The selected volume also pops toward the camera (SELECTED_LIFT_Z, plus
-    // HOVER_LIFT again on hover), which is a shorter distance to look across
-    // and so reads larger than its world size for the same FOV. Folding that
-    // pop straight into the required distance — solving
+    // The selected volume also pops toward the camera, which is a shorter
+    // distance to look across and so reads larger than its world size for the
+    // same FOV. Folding that pop straight into the required distance — solving
     // tanHalf * (distance - pop) >= selectedHalfHeight + VERTICAL_MARGIN for
     // `distance` — is exact, unlike inflating the half-height by a guessed
     // factor, and guarantees the tallest, most-forward volume's head never
     // reaches the top edge.
-    const forwardPop = SELECTED_LIFT_Z + HOVER_LIFT;
+    //
+    // SELECTED_LIFT_Z_PEAK rather than SELECTED_LIFT_Z: a volume swings past its
+    // resting depth on the way in (see `liftProfileZ` in layout.ts), and it is
+    // that peak, not the resting value, that has to fit.
+    const forwardPop = SELECTED_LIFT_Z_PEAK + HOVER_LIFT;
     const distanceForHeight = forwardPop + (selectedHalfHeight + VERTICAL_MARGIN) / tanHalf;
     const distance = THREE.MathUtils.clamp(
       Math.max(distanceForSlots, distanceForHeight),
