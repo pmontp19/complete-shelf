@@ -150,6 +150,13 @@ export interface BookCase {
    * volume can drop this subset the instant it is no longer fully opaque.
    */
   interiorMeshes: THREE.Mesh[];
+  /**
+   * The jacket's varnish-highlight plane. Outside `meshes` because its
+   * visibility is driven by its own strength rather than by the volume's fade:
+   * it is only shown while there is a highlight to draw, which for most of the
+   * run is never.
+   */
+  sheenMesh: THREE.Mesh;
   /** Invisible simple box for raycasting. */
   pickMesh: THREE.Mesh;
   /** For disposal. */
@@ -324,6 +331,21 @@ export function createBookCase(dims: BookDimensions, materials: BookMaterials): 
   meshes.push(frontArtMesh);
   group.add(frontArtMesh);
 
+  // The varnish highlight, on its own plane a hair in front of the artwork and
+  // sharing its outline exactly, so the sweep is bounded by the jacket rather
+  // than running out over the board's hairline frame. Deliberately NOT pushed
+  // into `meshes`: its visibility follows its own strength (the layout only
+  // shows it while it has something to draw), so a volume racked spine-out in
+  // the middle of the run costs nothing for it. Order 2 puts it above the
+  // artwork it adds light to.
+  const sheenMesh = new THREE.Mesh(frontArtGeometry, materials.jacketSheen);
+  sheenMesh.position.z = D / 2 + artProud * 2;
+  sheenMesh.castShadow = false;
+  sheenMesh.receiveShadow = false;
+  sheenMesh.renderOrder = 2;
+  sheenMesh.visible = false;
+  group.add(sheenMesh);
+
   // 6. Spine art: the generated (or scanned) spine artwork, proud of the
   // spine band the same way. Racked volumes are seen spine-on, so this is
   // the single most-viewed surface on the shelf (see `spineArtPlaneSize`
@@ -352,5 +374,5 @@ export function createBookCase(dims: BookDimensions, materials: BookMaterials): 
   geometries.push(pickGeometry);
   group.add(pickMesh);
 
-  return { group, meshes, interiorMeshes, pickMesh, geometries };
+  return { group, meshes, interiorMeshes, sheenMesh, pickMesh, geometries };
 }

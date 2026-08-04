@@ -312,6 +312,20 @@ export function createLayout(ctx: ShelfContext, deps: LayoutDeps): {
       // returns the superset `HardcoverRig`, safe to narrow back to.
       (rig as HardcoverRig).setInteriorVisible(opacity >= 1);
 
+      // The varnish highlight only makes sense on a jacket the reader can
+      // actually see, so it follows `focus` (1 only for the volume turned out at
+      // the centre) and is scaled by the volume's own opacity so it fades out
+      // with it rather than surviving as a floating streak. Reusing
+      // `ambientMotion` also stops it while a volume is being inspected, where
+      // the reader is turning it under orbit and a scripted sweep would fight
+      // the specular they are moving themselves. Off outright under reduced
+      // motion, which is a separate flag from `ambientMotion`: a travelling
+      // highlight is motion, and this one carries nothing a reader needs.
+      (rig as HardcoverRig).setSheen(
+        ctx.reducedMotion ? 0 : focus * opacity * ambientMotion,
+        elapsed,
+      );
+
       rig.shadowMesh.position.set(px, ctx.shelfTopY - 0.001, z + rig.dims.depth * 0.5 + 0.06);
       rig.shadowMaterial.opacity = 0.32 * opacity * (1 - hover * 0.45);
       rig.shadowMesh.visible = opacity > 0.02;

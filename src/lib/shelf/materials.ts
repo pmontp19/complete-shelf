@@ -11,6 +11,64 @@ import { createSpineTexture } from './textures';
 const PAGE_STOCK = '#e7ddc7';
 
 /**
+ * The colour of the sweep across a jacket. A varnish highlight is light
+ * reflecting off the coating, so it takes the lamp's colour rather than the
+ * book's: a warm white matching the key light's own, not the cover palette.
+ * Tinting it per volume would read as a coloured glow instead of a reflection.
+ */
+const SHEEN_HIGHLIGHT = 0xfff1d8;
+
+/**
+ * An additive sweep of light travelling slowly across a jacket: the highlight
+ * that crosses a varnished cover as it turns under a lamp. The jacket already
+ * carries `clearcoat`, which is the varnish as a material property; this is what
+ * that varnish does when the light moves.
+ *
+ * Additive and `depthWrite: false`, because it is light added to whatever is
+ * drawn there rather than a surface of its own: it must never occlude the artwork
+ * beneath it or take part in depth sorting.
+ *
+ * `uStrength` is driven per frame by the layout, which is also what keeps this
+ * off under `prefers-reduced-motion` (the strength simply stays at 0) and what
+ * fades it out along with its volume at the far end of the run.
+ */
+export function createJacketSheenMaterial(): THREE.ShaderMaterial {
+  return new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    uniforms: {
+      uTime: { value: 0 },
+      uStrength: { value: 0 },
+      uColor: { value: new THREE.Color(SHEEN_HIGHLIGHT) },
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    // One narrow diagonal band with eased edges, so it has no hard boundary,
+    // multiplied by a horizontal falloff so the sweep dies out before it reaches
+    // the jacket's edge instead of being cut off square by the end of the plane.
+    fragmentShader: `
+      varying vec2 vUv;
+      uniform float uTime;
+      uniform float uStrength;
+      uniform vec3 uColor;
+
+      void main() {
+        float travel = fract(vUv.x * 0.72 + vUv.y * 0.31 + uTime * 0.045);
+        float band = smoothstep(0.44, 0.5, travel) * (1.0 - smoothstep(0.5, 0.57, travel));
+        float falloff = smoothstep(0.0, 0.18, vUv.x) * smoothstep(1.0, 0.82, vUv.x);
+        gl_FragColor = vec4(uColor, band * falloff * uStrength * 0.32);
+      }
+    `,
+  });
+}
+
+/**
  * Every material one volume is dressed in. `board`, `boardBack`, `headband`,
  * `frontArt` and `spineArt` are `MeshPhysicalMaterial` so a later unit can add
  * `sheen`/`sheenColor`/`sheenRoughness` (cloth) or `clearcoat` (jacket art)
@@ -30,7 +88,15 @@ export interface BookMaterials {
   /** Jacket art. `.map` is assigned when the cover texture resolves. */
   frontArt: THREE.MeshPhysicalMaterial;
   spineArt: THREE.MeshPhysicalMaterial;
-  /** Every material above, in one array, for `BookRig.materials`. */
+  /**
+   * The animated varnish highlight. Deliberately NOT in `all`: that array is
+   * the set whose `.opacity` the layout writes for the distance fade, and this
+   * one is additive with its own `uStrength` uniform instead, so an opacity
+   * written onto it would mean nothing. It is disposed alongside the rest by
+   * `book.ts`.
+   */
+  jacketSheen: THREE.ShaderMaterial;
+  /** Every material whose `.opacity` the layout writes, for `BookRig.materials`. */
   all: THREE.Material[];
 }
 
@@ -124,7 +190,9 @@ export function createBookMaterials(
     transparent: true,
   });
 
+  const jacketSheen = createJacketSheenMaterial();
+
   const all: THREE.Material[] = [board, boardBack, pageEdge, headband, frontArt, spineArt];
 
-  return { board, boardBack, pageEdge, headband, frontArt, spineArt, all };
+  return { board, boardBack, pageEdge, headband, frontArt, spineArt, jacketSheen, all };
 }

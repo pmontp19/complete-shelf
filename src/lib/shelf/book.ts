@@ -20,6 +20,8 @@ const MAX_LEAN = 0.035;
  */
 export interface HardcoverRig extends BookRig {
   setInteriorVisible(visible: boolean): void;
+  /** Drives the jacket's varnish highlight: strength 0..1, elapsed in seconds. */
+  setSheen(strength: number, elapsed: number): void;
 }
 
 /** Assembles one volume: its case, materials, contact shadow and idle pose. */
@@ -51,6 +53,9 @@ export function buildBookRig(args: {
   // registered below, once it resolves.
   if (materials.spineArt.map) ctx.disposables.push(materials.spineArt.map);
   ctx.disposables.push(...materials.all);
+  // Not in `materials.all` (see `BookMaterials.jacketSheen`), so it needs
+  // registering on its own or it would be the one material that leaks.
+  ctx.disposables.push(materials.jacketSheen);
 
   const bookCase = createBookCase(dims, materials);
   ctx.disposables.push(...bookCase.geometries, bookCase.pickMesh.material as THREE.Material);
@@ -128,6 +133,21 @@ export function buildBookRig(args: {
     for (const mesh of bookCase.interiorMeshes) mesh.visible = visible;
   }
 
+  /**
+   * Drives the varnish highlight. `strength` 0 hides the plane outright rather
+   * than drawing a fully transparent one, which is what keeps the 21 volumes
+   * that are racked spine-out at any moment from each costing an additive pass
+   * for a highlight nobody can see. `elapsed` is wall-clock seconds, so the
+   * sweep's speed does not depend on the frame rate.
+   */
+  function setSheen(strength: number, elapsed: number): void {
+    const visible = strength > 0.001;
+    bookCase.sheenMesh.visible = visible;
+    if (!visible) return;
+    materials.jacketSheen.uniforms.uStrength.value = strength;
+    materials.jacketSheen.uniforms.uTime.value = elapsed;
+  }
+
   return {
     book,
     index,
@@ -142,5 +162,6 @@ export function buildBookRig(args: {
     hover: 0,
     setVisible,
     setInteriorVisible,
+    setSheen,
   };
 }
