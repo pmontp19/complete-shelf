@@ -63,8 +63,19 @@ const stepperClass =
 ---
 
 <section class="group block" data-shelf-root data-mode="browse">
+  {/* Marks the run as script-capable before anything paints, so a reader who
+      will get the 3D shelf never sees the static grid flash up first and then
+      get replaced. Without this the grid is visible for however long the engine
+      takes to mount, which is a full frame of the wrong page on every load.
+      Inline and un-deferred on purpose: it has to run during parsing, before
+      the fallback below is painted. `data-js` only claims that JavaScript ran,
+      not that the shelf works: the mount's own failure path clears it again, so
+      a browser without WebGL still falls back to the grid. */}
+  <script is:inline>
+    document.currentScript.parentElement.dataset.js = 'true';
+  </script>
   <div
-    class="shelf__stage relative hidden h-[min(clamp(24rem,62vh,42rem),70vh)] overflow-hidden bg-[radial-gradient(120%_76%_at_50%_92%,color-mix(in_srgb,var(--tint)_22%,transparent),transparent_66%),linear-gradient(180deg,var(--color-paper)_8%,color-mix(in_srgb,var(--tint)_7%,var(--color-paper))_58%,var(--color-paper)_100%)] transition-[background] duration-700 ease-brand group-data-[mounted=true]:block max-md:h-[min(clamp(20rem,52vh,28rem),70vh)]"
+    class="shelf__stage relative hidden h-[min(clamp(24rem,62vh,42rem),70vh)] overflow-hidden bg-[radial-gradient(120%_76%_at_50%_92%,color-mix(in_srgb,var(--tint)_22%,transparent),transparent_66%),linear-gradient(180deg,var(--color-paper)_8%,color-mix(in_srgb,var(--tint)_7%,var(--color-paper))_58%,var(--color-paper)_100%)] transition-[background] duration-700 ease-brand group-data-[js=true]:block group-data-[mounted=true]:block max-md:h-[min(clamp(20rem,52vh,28rem),70vh)]"
   >
     <div
       class="absolute inset-0 opacity-0 transition-opacity duration-900 ease-brand group-data-[ready=true]:opacity-100"
@@ -202,8 +213,15 @@ const stepperClass =
   }
 
   {/* Progressive enhancement: this list is the page until (and unless) the
-      WebGL shelf mounts successfully. */}
-  <div class="shell py-[clamp(1.5rem,4vw,2.5rem)] group-data-[mounted=true]:hidden" data-shelf-fallback>
+      WebGL shelf mounts successfully. Hidden on `data-js` as well as on
+      `data-mounted`, so it never flashes for a reader who is about to get the
+      shelf; the mount's failure path clears `data-js` and brings it straight
+      back. Without JavaScript neither attribute is ever set and this simply is
+      the page, which is the whole point of it. */}
+  <div
+    class="shell py-[clamp(1.5rem,4vw,2.5rem)] group-data-[js=true]:hidden group-data-[mounted=true]:hidden"
+    data-shelf-fallback
+  >
     <h2 class="visually-hidden">{t.shelf.listFallback}</h2>
     <ul class="fallback-grid grid grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-[clamp(1.25rem,3vw,2.25rem)]">
       {
@@ -379,8 +397,13 @@ const stepperClass =
         exitButton?.addEventListener('click', () => shelf.returnToShelf());
       })
       .catch((error) => {
-        // Leave the HTML fallback in place; it is a complete experience.
+        // Leave the HTML fallback in place; it is a complete experience. The
+        // inline script above hid it on `data-js` to stop it flashing during a
+        // normal load, so clearing that is what brings it back for a reader
+        // whose shelf never mounted, along with the empty stage that would
+        // otherwise sit above it.
         console.error('[shelf] mount failed, keeping the static catalogue', error);
+        delete root.dataset.js;
         loadingEl?.remove();
       });
   }

@@ -84,27 +84,46 @@ const TEXT_BLOCK_SEGMENTS = 1;
 const HEADBAND_RADIAL_SEGMENTS = 8;
 
 /**
+ * The rounding on the spine band's edges, and therefore the width of the bare
+ * cloth lip that a flat plane laid on its face can never cover.
+ *
+ * Kept small on purpose. The band used to round at 0.4 of its own width, which
+ * on a 0.026H band is a 0.0104H lip on every edge, and the art plane was inset
+ * by a further share of H on top of that. The two together left a smooth band of
+ * plain cloth all round the artwork, worst along the depth axis where it reached
+ * about a quarter of the whole spine's width on the thinnest volumes. That reads
+ * exactly as what it is: a smooth edge, and then the texture starting.
+ */
+const SPINE_BAND_ROUND_RATIO = 0.15;
+
+/** The band's corner radius, the one number the geometry and the art plane share. */
+function spineBandRadius(H: number): number {
+  return SPINE_BAND_WIDTH_RATIO * H * SPINE_BAND_ROUND_RATIO;
+}
+
+/**
  * The spine art plane's own width (its depth axis, before the plane is
  * rotated to face -X) and height (Y, head-to-tail). Exported so
  * `materials.ts` can generate the procedural spine texture at the exact
  * aspect ratio the plane is actually built at, otherwise the type painted
  * on it would read stretched or squashed against the geometry it sits on.
  *
- * Only the head/tail edge is inset by the shared `ART_INSET_RATIO`: a real
- * jacket's spine panel runs flush into the hinge (there is no board edge to
- * frame there), and insetting the depth axis by a fixed share of H would eat
- * away most of the width on the catalogue's thinnest spines: exactly the
- * surface racked volumes are seen by, so it cannot afford to shrink.
+ * The inset is the band's own corner radius and nothing more, so the plane
+ * covers exactly the flat part of the face it is laid on. A real jacket wraps
+ * the spine continuously: there is no board edge to frame here (that framing is
+ * the front cover's job, where the boards genuinely do overhang), so any inset
+ * beyond the rounding itself is just bare cloth where artwork should be. Racked
+ * volumes are seen spine-on, so this is the most-viewed surface on the shelf and
+ * the one that can least afford to give width away.
  */
 export function spineArtPlaneSize(dims: BookDimensions): { width: number; height: number } {
   const H = dims.height;
   const spineProud = SPINE_PROUD_RATIO * H;
-  const artInset = ART_INSET_RATIO * H;
   const spineFaceDepth = dims.depth + spineProud * 2;
-  const depthInset = Math.min(artInset, spineFaceDepth * 0.12);
+  const lip = spineBandRadius(H);
   return {
-    width: Math.max(0.01, spineFaceDepth - depthInset * 2),
-    height: Math.max(0.01, H - artInset * 2),
+    width: Math.max(0.01, spineFaceDepth - lip * 2),
+    height: Math.max(0.01, H - lip * 2),
   };
 }
 
@@ -230,7 +249,9 @@ export function createBookCase(dims: BookDimensions, materials: BookMaterials): 
     H,
     D + spineProud * 2,
     SPINE_SEGMENTS,
-    spineBandWidth * 0.4,
+    // Shared with `spineArtPlaneSize`, so the plane laid on this face and the
+    // rounding of the face itself can never drift apart.
+    spineBandRadius(H),
   );
   const spineMesh = new THREE.Mesh(spineGeometry, materials.board);
   spineMesh.position.x = -W / 2 + spineBandWidth / 2;
