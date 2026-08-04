@@ -166,7 +166,6 @@ export function createSpineTexture(book: ShelfBook, ratio: number, height = 1024
   // depends on the size against the canvas height and not against its width.
   // Expressing the floor as a share of the width would make the thickest volumes
   // — the ones with the most room — the first to lose their titles.
-  const halo = oppositeInk(book.textColor);
   drawSpineLine(ctx, (book.spineAuthor ?? book.author).toUpperCase(), {
     at: 0.15,
     length: height * 0.15,
@@ -176,7 +175,6 @@ export function createSpineTexture(book: ShelfBook, ratio: number, height = 1024
     tracking: 0.12,
     alpha: 0.9,
     ink: book.textColor,
-    halo,
   });
   drawSpineLine(ctx, (book.spineTitle ?? book.title).toUpperCase(), {
     at: 0.525,
@@ -186,7 +184,6 @@ export function createSpineTexture(book: ShelfBook, ratio: number, height = 1024
     weight: 600,
     tracking: 0.06,
     ink: book.textColor,
-    halo,
   });
   drawSpineLine(ctx, book.publisher.toUpperCase(), {
     at: 0.875,
@@ -197,7 +194,6 @@ export function createSpineTexture(book: ShelfBook, ratio: number, height = 1024
     tracking: 0.16,
     alpha: 0.8,
     ink: book.textColor,
-    halo,
   });
 
   return finalizeCanvasTexture(new THREE.CanvasTexture(canvas));
@@ -215,8 +211,6 @@ interface SpineLineOptions {
   /** Letter-spacing as a fraction of the font size. */
   tracking: number;
   ink: string;
-  /** Colour of the halo that keeps the type off the ground. */
-  halo: string;
   alpha?: number;
 }
 
@@ -255,12 +249,14 @@ function drawSpineLine(
   ctx.globalAlpha = options.alpha ?? 1;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  // A spine is only a few dozen screen pixels wide once it is in perspective,
-  // so the type needs help surviving the downsample: a halo in the opposite ink
-  // separates every stroke from the ground even where the shading across the
-  // spine is closest to the type's own value.
-  ctx.shadowColor = options.halo;
-  ctx.shadowBlur = size * 0.45;
+  // No shadow behind the type. There used to be a blurred halo in the opposite
+  // ink, on the theory that it would help the letterforms survive being
+  // downsampled to a few dozen screen pixels. What it actually produced was a
+  // glow around every glyph, which is not something printed type does: a spine is
+  // foil or ink pressed flat into cloth, and nothing about it floats above the
+  // surface. The contrast the type needs is the cover palette's job, and it
+  // already does it, because `textColor` is derived as the readable ink over
+  // `spineColor` rather than picked by hand.
 
   let cursor = -measureTracked(ctx, line, tracking) / 2;
   for (const character of line) {
