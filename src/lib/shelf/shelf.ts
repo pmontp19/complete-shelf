@@ -17,7 +17,16 @@ const STEP_DURATION_MS = 520;
 const SETTLE_MIN_MS = 360;
 const SETTLE_MAX_MS = 980;
 const TINT_DURATION_MS = 760;
-const PIXEL_RATIO_CAP = 2;
+// Device pixel ratio is capped below the display's own, because a shelf of
+// composite hardcovers is fragment-bound rather than vertex-bound: every volume
+// is several transparent layers the GPU blends per pixel, so the cost scales
+// with the square of this number. A phone reporting 3x would otherwise be asked
+// for nine times the fragments of a 1x screen. Narrow screens get the lower cap
+// of the two, since they are also the ones least likely to have the GPU for it.
+const PIXEL_RATIO_CAP = 1.75;
+const PIXEL_RATIO_CAP_NARROW = 1.5;
+/** Below this width the narrow cap applies, matching the layout's own md break. */
+const NARROW_WIDTH = 760;
 // Racked books stand spine-out, so a slot is one spine thick — not one cover
 // wide. Spacing off the cover width left ~5x the spine's own width of dead air
 // between volumes, which read as a nearly empty shelf.
@@ -187,6 +196,8 @@ export const mountShelf: MountShelf = async (container, options) => {
   renderer.setClearColor(0x000000, 0);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  // Provisional: `handleResize` runs before the first frame and re-rates this
+  // against the container's actual width, which is what decides the cap.
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, PIXEL_RATIO_CAP));
   renderer.domElement.style.display = 'block';
   renderer.domElement.style.width = '100%';
@@ -665,6 +676,12 @@ export const mountShelf: MountShelf = async (container, options) => {
   function handleResize(): void {
     const width = Math.max(1, container.clientWidth);
     const height = Math.max(1, container.clientHeight);
+    // Re-applied on every resize rather than once at construction: the cap
+    // depends on the width, so a rotated phone or a dragged window that crosses
+    // the narrow break has to be re-rated. `setPixelRatio` is a no-op when the
+    // value has not actually changed.
+    const cap = width < NARROW_WIDTH ? PIXEL_RATIO_CAP_NARROW : PIXEL_RATIO_CAP;
+    ctx.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, cap));
     ctx.renderer.setSize(width, height, false);
     ctx.camera.aspect = width / height;
     stage.updateCameraFraming();

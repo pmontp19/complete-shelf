@@ -31,6 +31,8 @@ const CAMERA_MAX_DISTANCE = 13;
 const CAMERA_LIFT_RATIO = 0.05;
 
 const LEDGE_DEPTH = 0.68;
+/** Below this viewport width the key light gets the smaller shadow map. */
+const SHADOW_NARROW_WIDTH = 700;
 
 /**
  * Reads a colour off a CSS custom property. The scene has no background of its
@@ -99,7 +101,15 @@ export function createStage(ctx: ShelfContext): Stage {
   const keyLight = new THREE.DirectionalLight(0xfff1d8, 1.05);
   keyLight.position.set(-2.4, 3.1, 3.3);
   keyLight.castShadow = true;
-  keyLight.shadow.mapSize.set(1024, 1024);
+  // The shadow camera has to span the whole visible run, so at 1024 a wide
+  // desktop canvas spends only a few texels per volume and the contact edge
+  // under each book turns blocky. A narrow canvas frames proportionally fewer
+  // volumes, so it does not need the extra resolution and is likelier to be on
+  // a phone GPU that would rather not allocate it. Read once here rather than
+  // on resize: changing `mapSize` after the map is allocated needs the old one
+  // disposed, which is not worth the branch for a window that crossed a break.
+  const shadowTexels = Math.max(1, window.innerWidth) < SHADOW_NARROW_WIDTH ? 1024 : 2048;
+  keyLight.shadow.mapSize.set(shadowTexels, shadowTexels);
   keyLight.shadow.camera.top = 2.1;
   keyLight.shadow.camera.bottom = -0.6;
   keyLight.shadow.camera.near = 0.5;
