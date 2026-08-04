@@ -68,8 +68,17 @@ const SPINE_PROUD_RATIO = 0.003;
 const HEADBAND_RADIUS_RATIO = SQUAB_RATIO / 2;
 /** How far an art plane stands proud of the board/spine face it dresses. */
 const ART_PROUD_RATIO = 0.001;
-/** Art-plane inset from its board's edge, framing it with a board hairline. */
-const ART_INSET_RATIO = 0.015;
+/** The rounding on a board's edges, as a share of its own thickness. */
+const BOARD_ROUND_RATIO = 0.4;
+
+/**
+ * A board's corner radius, and therefore the width of the bare cloth lip a flat
+ * plane laid on its face can never cover. Shared by the board geometry and the
+ * jacket plane, so the face and the plane on it cannot drift apart.
+ */
+function boardRadius(H: number): number {
+  return BOARD_THICKNESS_RATIO * H * BOARD_ROUND_RATIO;
+}
 
 // `RoundedBoxGeometry`'s `segments` argument subdivides every face of the
 // box uniformly (not just the rounded corners), so its cost is quadratic:
@@ -191,7 +200,14 @@ export function createBookCase(dims: BookDimensions, materials: BookMaterials): 
   const spineProud = SPINE_PROUD_RATIO * H;
   const headbandRadius = HEADBAND_RADIUS_RATIO * H;
   const artProud = ART_PROUD_RATIO * H;
-  const artInset = ART_INSET_RATIO * H;
+  // The jacket's inset from the board's edge: the board's own rounding and
+  // nothing more, so the artwork covers exactly the flat part of the face and
+  // only the rounded lip is left as cloth. It used to be a fixed share of the
+  // book's height, which on this catalogue's proportions was over 2% of the
+  // cover's width per side, so about 5% of the whole cover went to a border. A
+  // trade edition's art runs to the edge: what should be left is the thickness
+  // of the board turning over, not a mat around a plate.
+  const artInset = boardRadius(H);
 
   // 1. Text block: flush with the spine (pages are sewn there, not trimmed
   // away from it) and inset from the boards on the fore-edge, head and tail.
@@ -230,7 +246,7 @@ export function createBookCase(dims: BookDimensions, materials: BookMaterials): 
     H,
     boardThickness,
     BOARD_SEGMENTS,
-    boardThickness * 0.4,
+    boardRadius(H),
   );
   const frontBoard = new THREE.Mesh(boardGeometry, materials.board);
   frontBoard.position.z = D / 2 - boardThickness / 2;
