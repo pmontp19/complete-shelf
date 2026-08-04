@@ -6,6 +6,10 @@
  *   npx astro preview --port 4173 --host 127.0.0.1 &
  *   node tests/smoke.mjs
  *
+ * The Chromium binary defaults to the CI path baked into `CHROME` below.
+ * Override it with `SMOKE_CHROME` to run on a developer machine instead
+ * (e.g. a local Playwright browser install).
+ *
  * Exits non-zero on the first category of failure so CI can gate on it.
  * Screenshots land in `tests/__screenshots__/` for eyeballing.
  */
@@ -15,7 +19,7 @@ import { readFile } from 'node:fs/promises';
 
 const BASE = process.env.SMOKE_BASE ?? 'http://127.0.0.1:4173';
 const SHOTS = new URL('./__screenshots__/', import.meta.url).pathname;
-const CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+const CHROME = process.env.SMOKE_CHROME ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 
 const books = JSON.parse(new TextDecoder().decode(await readFile(new URL('../src/data/books.json', import.meta.url))));
 const EXPECTED = books.length;

@@ -326,4 +326,67 @@
     opacity: 1;
     transform: none;
   }
+
+  /* --- inspect-mode chrome ---------------------------------------------------
+     `src/lib/shelf/shelf.ts` is the single source of truth for the
+     interaction mode: it writes `data-mode="browse|focusing|inspect|
+     returning"` onto [data-shelf-root] on every real transition, and this is
+     the only place that reacts to it. Nothing here ever drives the engine
+     (no HTML transition duration is read as a timer), and nothing here
+     touches a layout-affecting property, so entering or leaving inspect
+     never resizes `.shelf__stage`, reflows the page below it, or moves the
+     scroll position. `focusing` is grouped with `inspect` (and `returning`
+     with `browse`) so the chrome starts moving in step with the camera
+     rather than snapping in only once it has already arrived.
+
+     The exit button and the hints share one curve with the rest of the
+     site's interface motion (`--ease-brand`); nothing here invents a second
+     one. Reduced motion is already handled globally above, which collapses
+     these transitions to effectively nothing.
+
+     `inert` (applied by Shelf.astro's inline script) flips the instant the
+     mode changes, so whichever direction is fading a control OUT is a dead
+     zone: it still looks live but no longer responds. Entry and exit are
+     therefore timed asymmetrically, the same shape the engine already uses
+     to open a volume in 460ms and close it in 340ms (dismissal reads
+     faster than arrival). Each element's fade-to-hidden end state carries
+     the fast 120ms out duration; its fade-to-visible end state restates
+     the original 260ms so arriving keeps its unhurried pace. */
+
+  [data-shelf-inspect-exit],
+  [data-shelf-inspect-hints] {
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity 120ms var(--ease-brand), transform 120ms var(--ease-brand),
+      color 160ms var(--ease-brand), background-color 160ms var(--ease-brand),
+      border-color 160ms var(--ease-brand);
+  }
+
+  [data-shelf-root][data-mode='focusing'] [data-shelf-inspect-exit],
+  [data-shelf-root][data-mode='inspect'] [data-shelf-inspect-exit],
+  [data-shelf-root][data-mode='focusing'] [data-shelf-inspect-hints],
+  [data-shelf-root][data-mode='inspect'] [data-shelf-inspect-hints] {
+    opacity: 1;
+    transform: none;
+    transition: opacity 260ms var(--ease-brand), transform 260ms var(--ease-brand),
+      color 160ms var(--ease-brand), background-color 160ms var(--ease-brand),
+      border-color 160ms var(--ease-brand);
+  }
+
+  /* The browse-only instrument panel (steppers + scrub rail): it recedes
+     together, the way the reference fades its arrows and ticks, because
+     none of it describes anything while a single volume is isolated. Its
+     fade-to-visible (returning to browse) end state is the base rule below,
+     kept at 260ms; its fade-to-hidden (entering inspect) end state is the
+     mode-active rule, sped up to 120ms for the same reason as above. */
+  [data-shelf-controls] {
+    transition: opacity 260ms var(--ease-brand), transform 260ms var(--ease-brand);
+  }
+
+  [data-shelf-root][data-mode='focusing'] [data-shelf-controls],
+  [data-shelf-root][data-mode='inspect'] [data-shelf-controls] {
+    opacity: 0;
+    transform: translateY(4px) scale(0.96);
+    transition: opacity 120ms var(--ease-brand), transform 120ms var(--ease-brand);
+  }
 }

@@ -15,8 +15,32 @@ languages, no backend and no third-party requests at runtime.
   carries on and settles onto a volume), swipe sideways on a trackpad, use the arrow keys, the two
   steppers, or click a spine to bring it to the centre. Hovering a spine tips it out of the run. The
   centred volume turns to face you and the whole page — the wash behind the stage, the lighting in
-  the scene, the caption's rule and button — tints to its cover palette. Clicking it opens the
-  book's record. There is no page-turning: this is a bibliography, not a reader.
+  the scene, the caption's rule and button — tints to its cover palette. There is no page-turning:
+  this is a bibliography, not a reader.
+
+  Clicking the centred volume, or pressing Enter on the shelf, no longer opens the record: it pulls
+  that volume forward and off-axis, fades out the rest of the run and the ledge, and hands the
+  camera to a constrained orbit so it can be turned and looked at. Escape, or the exit control,
+  returns to the shelf. From there, Enter or a click on the volume opens the record, and the
+  caption's own button is always the way there too.
+
+  Each volume is a composite hardcover, not a single box with six flat faces: a text block flush
+  with the spine and inset from the boards on the fore-edge, head and tail, front and back boards
+  that overhang it, a spine band standing proud of the boards, a headband nested in the shoulder at
+  head and tail, and the real cover scan on its own plane, inset from the board edge so a hairline of
+  board colour frames the jacket the way a real one wraps over boards. Cloth over board carries a
+  `sheen` (what actually reads as cloth, roughness alone does not); the jacket carries a light
+  `clearcoat`, the varnish on a printed cover.
+
+  Height and width come from the real edition, not a guess: `trimHeightMm` per record in
+  `src/data/books.json`, and the cover scan's own aspect from `src/data/cover-meta.json`. That turns up
+  something worth knowing before anyone "improves" the shelf later: checking the publisher's own
+  listings shows it binds nearly this whole catalogue at one trim, so 20 of the 22 volumes are
+  verifiably 230x150mm, and only the Jamie Oliver cookbook (246mm) and `el-cel-de-mitjanit` (200mm)
+  genuinely stand apart. The one synthetic touch is a documented, sub-millimetre binding-tolerance
+  jitter seeded per book id, not a licence to invent variety the data does not support: this is
+  published bibliographic data, and varied heights should stay a fact about the editions, not a
+  design choice.
 
   Vertical scrolling always belongs to the page. A looping shelf has no end to escape past, so
   swallowing the wheel would strand the reader on it.
@@ -74,7 +98,18 @@ languages, no backend and no third-party requests at runtime.
     │   │   ├── schema.ts   # the JSON-LD graph every page carries
     │   │   ├── markdown.ts # the .md mirror of every page
     │   │   └── guidance.ts # what llms.txt says to a reader that is not a person
-    │   └── shelf/          # the three.js shelf, dependency-free
+    │   └── shelf/              # the three.js shelf, dependency-free
+    │       ├── types.ts       # the public contract: ShelfBook, ShelfOptions, ShelfHandle, ShelfContext, …
+    │       ├── easing.ts      # time-based Tween and easing curves
+    │       ├── geometry.ts    # book dimensions from real trim data; createBookCase, the composite hardcover
+    │       ├── materials.ts   # the per-volume physically-based materials
+    │       ├── textures.ts    # procedural spine, ledge and page-edge canvases; safe texture loading
+    │       ├── book.ts        # buildBookRig: assembles one volume and loads its cover
+    │       ├── scene.ts       # furniture, lights, the ledge, the theme palette, camera framing
+    │       ├── layout.ts      # the per-frame pose solver, including the per-pair spacing solver
+    │       ├── inspect.ts     # the inspect-mode state machine, its camera and orbit controls
+    │       ├── diagnostics.ts # the read-only debug surface
+    │       └── shelf.ts       # mountShelf: DOM scaffold, state, input, the frame loop, the handle
     ├── styles/
     │   ├── global.css      # the design system
     │   └── view-transitions.css  # imported only by the pages that take part
@@ -88,6 +123,38 @@ languages, no backend and no third-party requests at runtime.
         └── [lang]/         # …and every page again as .md, beside its .astro
 ```
 
+## The shelf's engine
+
+`src/lib/shelf/` threads its eleven modules through one mutable `ShelfContext` (defined in
+`types.ts`): the renderer, the scene, every book's `BookRig`, the current `mode`, `selectedIndex`
+and `focusProgress`, and the framing numbers `scene.ts` recomputes on every resize for `layout.ts`
+and `inspect.ts` to read back. `shelf.ts` builds it once, and the state-owning modules, `book.ts`,
+`scene.ts`, `layout.ts`, `inspect.ts` and `diagnostics.ts`, each thread it through as shared state;
+`easing.ts`, `geometry.ts`, `materials.ts` and `textures.ts` stay pure functions of their own
+arguments, with no `ctx` at all.
+
+Exactly one thing drives the camera at a time, and `ctx.mode` says which: `browse` leaves it where
+`updateCameraFraming` set it, `focusing` and `returning` tween it towards the inspected volume or
+back, and `inspect` hands it entirely to `OrbitControls`. `inspect.ts` owns that state machine
+(`browse → focusing → inspect → returning → browse`); `layout.ts` blends the resulting pose into
+the per-frame layout so the run parts around whichever volume is coming forward. Focusing runs
+460ms and returning 340ms (a hand draws a book out slower than it lets go); both resolve
+immediately under `prefers-reduced-motion`. The lens is longer than before too, 27° vertical FOV
+rather than 34°, which flattens the perspective towards a photograph of a shelf rather than a
+wide-angle render; the camera's reach is solved from the tallest volume actually in the run rather
+than a fixed half-height, so neither a taller trim nor the binding jitter ever clips the frame.
+
+For maintainers, `window.__SHELF__.diagnostics()` reports `drawCalls`, `triangles`, `geometries`,
+`textures`, `pixelRatio`, `mode` and `collisionRejects`, plus `motionPhase`: the browse carriage's
+own state, as opposed to `mode`'s inspect/browse state machine. It reads `scrubbing` while a wheel
+or drag gesture holds a live position over the tween, `settling` from the moment that gesture lets
+go until the tween it hands off to has eased onto the nearest volume, `gliding` while a keyboard
+step, a click or a programmatic `.browse()` call is still easing the carriage towards its target,
+and `idle` the rest of the time. `.inspect(index?)`, `.browse(index?)` and `.returnToShelf()` drive
+the shelf without a pointer. The same values are mirrored onto the canvas as `data-*` attributes at
+most twice a second, so a real browser or an end-to-end test can read them without opening a
+devtools panel.
+
 ## Running it
 
 ```bash
@@ -99,6 +166,10 @@ npm test           # drives the built site in Chromium (needs `npm run preview` 
 ```
 
 Needs Node 22.12 or newer — Astro 6 dropped Node 18 and 20.
+
+`npm test` looks for Chromium at the CI-only path baked into `tests/smoke.mjs`; set `SMOKE_CHROME`
+to a local Chromium binary (`npx playwright install chromium` will fetch one) to run it on a
+developer machine instead of only in CI.
 
 `npm run build` runs `astro check` first, so a broken translation key or a malformed book record
 fails the build rather than shipping.
