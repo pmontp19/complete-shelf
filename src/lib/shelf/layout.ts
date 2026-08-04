@@ -312,6 +312,29 @@ export function createLayout(ctx: ShelfContext, deps: LayoutDeps): {
       // returns the superset `HardcoverRig`, safe to narrow back to.
       (rig as HardcoverRig).setInteriorVisible(opacity >= 1);
 
+      // The varnish highlight only makes sense on a jacket the reader can
+      // actually see, so it follows `focus` (1 only for the volume turned out at
+      // the centre) and is scaled by the volume's own opacity so it fades out
+      // with it rather than surviving as a floating streak. Reusing
+      // `ambientMotion` also stops it while a volume is being inspected, where
+      // the reader is turning it under orbit and the real specular is already
+      // theirs to move.
+      //
+      // Where the band sits is derived from what the reader is doing, never from
+      // a clock: the pointer's position across the stage (the same value that
+      // tilts the volume, so the highlight and the tilt agree with each other)
+      // and how far the volume has turned out of the run, which is what sweeps it
+      // as the carriage scrubs past. So it holds still when nothing moves, the
+      // way a reflection does. Under reduced motion the pointer term is already
+      // pinned to 0 and the volume does not tilt, but the highlight would still
+      // be a bright diagonal sitting on the cover with nothing to explain it, so
+      // it is switched off there rather than left frozen.
+      const turnedOut = 1 - rotationY / REST_ROTATION_Y;
+      (rig as HardcoverRig).setSheen(
+        ctx.reducedMotion ? 0 : focus * opacity * ambientMotion,
+        0.5 - ctx.pointerSmooth.x * 0.45 + turnedOut * 0.35,
+      );
+
       rig.shadowMesh.position.set(px, ctx.shelfTopY - 0.001, z + rig.dims.depth * 0.5 + 0.06);
       rig.shadowMaterial.opacity = 0.32 * opacity * (1 - hover * 0.45);
       rig.shadowMesh.visible = opacity > 0.02;
