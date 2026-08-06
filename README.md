@@ -1,5 +1,16 @@
 # Judith Raigal Aran — literary translator
 
+> ## 📦 Moved and archived
+>
+> Development continues in **[`pmontp19/translator`](https://github.com/pmontp19/translator)**,
+> which is where this site now lives. This repository is archived and read-only: the tree here
+> at `f1c810a` is the exact state that was carried over, kept for the history and the pull
+> requests behind it.
+>
+> This repository started from [MengTo/complete-shelf](https://github.com/MengTo/complete-shelf)
+> as inspiration. Nothing of that original library remains in the tree: its `index.html` was
+> replaced outright, and only `.gitignore` and this README survived, both rewritten.
+
 The personal site of [Judith Raigal Aran](https://www.deaa.urv.cat/ca/departament/staff/raigal/), a
 Catalan literary translator working from English, German and French into Catalan and Spanish. The
 home page is an interactive 3D shelf holding every book she has translated, each volume carrying its
